@@ -110,6 +110,11 @@ view** over a small set of core tables. No double-entry.
   with the owner.
 - **Admin:** full read/write across all tables; manages users (invite, assign
   role, deactivate), deletes records, edits settings.
+- **Admin reassignment:** the Admin can assign or re-assign any consultant to
+  any Placement Coordinator at any time (changing `assigned_coordinator_id`),
+  which immediately moves that consultant into the new coordinator's scope. This
+  is exposed in the consultant detail view and as a bulk action on the
+  consultant list.
 - Vendors and Clients are shared/readable by all authenticated users (writes
   may be admin-restricted — to confirm during implementation).
 
@@ -158,7 +163,17 @@ dashboard, light + dark mode, Linear/Vercel-style neutral professional palette.
   what value to copy, and where to paste it. No step assumes prior Supabase
   knowledge.
 
-## 10. Out of scope (for now)
+## 10. Per-phase completion protocol
+
+At the end of **every phase**, before moving on:
+1. Announce clearly: "I have completed Phase N" (with the phase number/name).
+2. Write a detailed phase report to
+   `docs/superpowers/phase-reports/phase-N-<name>.md` covering: what was built,
+   the tables/files/components added or changed, any Supabase steps the user must
+   run (click-by-click), how to test it, and what's deferred to later phases.
+3. Commit the phase work and its report.
+
+## 11. Out of scope (for now)
 
 - Public candidate-facing job application portal (separate from this internal
   tool)
