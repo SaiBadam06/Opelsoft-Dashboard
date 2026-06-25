@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "seed": "dotenv -e .env.local -- tsx ../scripts/seed.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
