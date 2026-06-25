@@ -23,8 +23,10 @@ petitioner tracking. The data model below reflects this reality rather than a
 generic full-time-recruiting template.
 
 **Assumptions (to be confirmed):**
-- **H1T** = H1B Transfer list (consultants whose H1B petition is being
-  sponsored/transferred). Modeled as a flag/sub-status on Consultant.
+- **H1T** = visa-transfer list (consultants whose work-authorization/petition is
+  being transferred or sponsored). **Not H1B-specific** — covers any visa type
+  (H1B, H4 EAD, OPT→H1B, etc.). Modeled as a general `visa_transfer` flag on
+  Consultant; the actual visa type comes from the Visa/Work-Authorization field.
 - **Prime / Layer** = OpelSoft's position in the vendor chain (Prime = direct
   with the client's vendor; Layer = behind another sub-vendor).
 
@@ -75,7 +77,7 @@ view** over a small set of core tables. No double-entry.
   - **pipeline_stage** (Jira-style): New, Contacted, Interested, Resume Received,
     Screening, Matched, Submitted, Interview R1, Interview R2, Final Interview,
     Offer Released, Offer Accepted, Placed, Rejected, Hold
-  - **h1b_transfer** flag (drives the H1T list)
+  - **visa_transfer** flag (drives the H1T list — any visa type, not just H1B)
   - `assigned_coordinator_id` → profiles
 - **requirements** — Title, Client, Vendor, experience, skills, location, remote,
   budget/rate, notice period, employment type, priority, status, created date,
@@ -99,7 +101,7 @@ view** over a small set of core tables. No double-entry.
 
 ### Derived views (no new tables)
 - **Bench list** = consultants where status = Available
-- **H1T list** = consultants where `h1b_transfer = true`
+- **H1T list** = consultants where `visa_transfer = true`
 - **Submissions / Interviews / Placements lists** = their tables, filtered/sorted
 
 ## 6. Permissions (RLS)
