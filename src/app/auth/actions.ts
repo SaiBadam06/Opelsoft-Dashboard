@@ -82,7 +82,10 @@ export async function inviteUser(_prev: unknown, formData: FormData) {
 
   const userId = gen.data.user?.id;
   if (userId) {
-    await admin.from("profiles").update({ role }).eq("id", userId);
+    // Upsert (not update) so a profile is guaranteed even if one is missing.
+    await admin
+      .from("profiles")
+      .upsert({ id: userId, email, role }, { onConflict: "id" });
   }
 
   const token = gen.data.properties?.hashed_token;

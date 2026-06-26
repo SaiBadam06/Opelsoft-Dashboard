@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import type { Role } from "@/lib/roles";
+
+const PROFILE_COLUMNS = "id, email, full_name, role, is_active";
 
 export interface Profile {
   id: string;
@@ -19,11 +22,36 @@ export async function getCurrentProfile(): Promise<Profile | null> {
 
   const { data } = await supabase
     .from("profiles")
-    .select("id, email, full_name, role, is_active")
+    .select(PROFILE_COLUMNS)
     .eq("id", user.id)
     .single();
 
-  return (data as Profile) ?? null;
+  if (data) return data as Profile;
+
+  // Self-heal: an authenticated user must always have a profile. If one is
+  // missing (e.g. created outside the normal flow), create it now.
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  );
+  const { data: healed } = await admin
+    .from("profiles")
+    .upsert(
+      {
+        id: user.id,
+        email: user.email ?? "",
+        full_name:
+          (user.user_metadata?.full_name as string | undefined) ??
+          user.email ??
+          null,
+      },
+      { onConflict: "id" },
+    )
+    .select(PROFILE_COLUMNS)
+    .single();
+
+  return (healed as Profile) ?? null;
 }
 
 export async function requireProfile(): Promise<Profile> {
