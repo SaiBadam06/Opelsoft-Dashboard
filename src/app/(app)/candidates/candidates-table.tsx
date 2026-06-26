@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Search, Users } from "lucide-react";
 
 import type { Candidate } from "@/lib/candidates";
-import { stageLabel, statusBadgeClass, statusLabel } from "@/lib/candidate-constants";
-import { cn } from "@/lib/utils";
+import { stageLabel } from "@/lib/candidate-constants";
+import { StatusSelect } from "./status-select";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -121,10 +121,8 @@ export function CandidatesTable({ candidates }: { candidates: Candidate[] }) {
                     </div>
                   </TableCell>
                   <TableCell>{c.location ?? "—"}</TableCell>
-                  <TableCell>
-                    <Badge className={statusBadgeClass(c.status)}>
-                      {statusLabel(c.status)}
-                    </Badge>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <StatusSelect id={c.id} status={c.status} />
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {stageLabel(c.pipeline_stage)}

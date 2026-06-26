@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -105,6 +105,12 @@ export function PipelineBoard({ candidates }: { candidates: Candidate[] }) {
   const [items, setItems] = useState<Candidate[]>(candidates);
   const [activeId, setActiveId] = useState<string | null>(null);
   const prevItems = useRef<Candidate[]>(candidates);
+
+  // Re-sync when the server sends fresh data (e.g. after adding/editing a
+  // candidate elsewhere), so the board always reflects the full current set.
+  useEffect(() => {
+    setItems(candidates);
+  }, [candidates]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),

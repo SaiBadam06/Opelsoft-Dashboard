@@ -110,6 +110,21 @@ export async function deleteCandidate(id: string) {
   redirect("/candidates");
 }
 
+export async function setStatus(id: string, status: CandidateStatus) {
+  const me = await getCurrentProfile();
+  if (!me) return { error: "Not authorized" };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("candidates")
+    .update({ status, updated_by: me.id })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/candidates");
+  revalidatePath("/pipeline");
+  revalidatePath(`/candidates/${id}`);
+  return { ok: true as const };
+}
+
 export async function setStage(id: string, stage: PipelineStage) {
   const me = await getCurrentProfile();
   if (!me) return { error: "Not authorized" };
@@ -120,6 +135,7 @@ export async function setStage(id: string, stage: PipelineStage) {
     .eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/pipeline");
+  revalidatePath("/candidates");
   revalidatePath(`/candidates/${id}`);
   return { ok: true as const };
 }

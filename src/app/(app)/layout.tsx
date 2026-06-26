@@ -12,7 +12,7 @@ export default async function AppLayout({
   const profile = await requireProfile();
   return (
     <SidebarProvider
-      style={{ "--sidebar-width": "17.5rem" } as CSSProperties}
+      style={{ "--sidebar-width": "15.5rem" } as CSSProperties}
     >
       <AppSidebar role={profile.role} />
       <SidebarInset>
