@@ -47,8 +47,11 @@ export async function inviteUser(_prev: unknown, formData: FormData) {
   const me = await getCurrentProfile();
   if (me?.role !== "admin") return { error: "Not authorized" };
 
-  const email = String(formData.get("email") ?? "");
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
   const role = String(formData.get("role") ?? "coordinator");
+  if (!email) return { error: "Email is required." };
   if (role !== "admin" && role !== "coordinator") {
     return { error: "Invalid role" };
   }
@@ -59,15 +62,35 @@ export async function inviteUser(_prev: unknown, formData: FormData) {
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
 
-  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback`;
-  const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo,
-  });
-  if (error) return { error: error.message };
-
-  // Set the chosen role on the freshly created profile
-  if (data.user) {
-    await admin.from("profiles").update({ role }).eq("id", data.user.id);
+  // Generate an account-setup link. For a new email we create the user via an
+  // "invite" link; if the email already exists we fall back to a "recovery"
+  // link so the admin can re-send setup instead of hitting a hard error.
+  let type: "invite" | "recovery" = "invite";
+  let gen = await admin.auth.admin.generateLink({ type: "invite", email });
+  if (gen.error) {
+    const msg = gen.error.message.toLowerCase();
+    const exists =
+      msg.includes("already") ||
+      msg.includes("registered") ||
+      msg.includes("exists");
+    if (!exists) return { error: gen.error.message };
+    type = "recovery";
+    gen = await admin.auth.admin.generateLink({ type: "recovery", email });
+    if (gen.error) return { error: gen.error.message };
   }
-  return { ok: true };
+
+  const userId = gen.data.user?.id;
+  if (userId) {
+    await admin.from("profiles").update({ role }).eq("id", userId);
+  }
+
+  const token = gen.data.properties?.hashed_token;
+  if (!token) return { error: "Could not generate a setup link." };
+
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const setupLink = `${site}/auth/confirm?token_hash=${token}&type=${type}&next=${encodeURIComponent(
+    "/auth/set-password",
+  )}`;
+
+  return { ok: true as const, email, role, reused: type === "recovery", setupLink };
 }
