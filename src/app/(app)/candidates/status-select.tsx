@@ -73,13 +73,13 @@ export function StatusSelect({
         disabled={pending}
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring",
+          "inline-flex w-32 items-center justify-between gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring",
           statusBadgeClass(value),
           pending && "opacity-60",
         )}
       >
-        {statusLabel(value)}
-        <ChevronDown className="size-3 opacity-80" />
+        <span className="truncate">{statusLabel(value)}</span>
+        <ChevronDown className="size-3 shrink-0 opacity-80" />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
