@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
@@ -13,7 +14,10 @@ export interface Profile {
   is_active: boolean;
 }
 
-export async function getCurrentProfile(): Promise<Profile | null> {
+// Cached per server request: the layout, the page guard, and the page body all
+// call this — `cache()` collapses them into a single auth + profile fetch.
+export const getCurrentProfile = cache(
+  async function getCurrentProfile(): Promise<Profile | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -52,7 +56,7 @@ export async function getCurrentProfile(): Promise<Profile | null> {
     .single();
 
   return (healed as Profile) ?? null;
-}
+});
 
 export async function requireProfile(): Promise<Profile> {
   const profile = await getCurrentProfile();
