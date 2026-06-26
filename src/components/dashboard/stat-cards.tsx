@@ -18,28 +18,30 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import type { DashboardMetrics } from "@/lib/dashboard";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 type Metric = {
   label: string;
   icon: LucideIcon;
   chip: string;
+  key: keyof DashboardMetrics;
 };
 
 const METRICS: Metric[] = [
-  { label: "Total Candidates", icon: Users, chip: "bg-info text-info-foreground" },
-  { label: "Active Candidates", icon: UserCheck, chip: "bg-success text-success-foreground" },
-  { label: "Active Requirements", icon: Briefcase, chip: "bg-brand text-primary-foreground" },
-  { label: "Recruiters", icon: Headset, chip: "bg-info text-info-foreground" },
-  { label: "Interviews Today", icon: CalendarClock, chip: "bg-warning text-warning-foreground" },
-  { label: "Placements", icon: Award, chip: "bg-success text-success-foreground" },
-  { label: "Pending Follow-ups", icon: BellRing, chip: "bg-warning text-warning-foreground" },
-  { label: "Submissions Today", icon: Send, chip: "bg-brand text-primary-foreground" },
-  { label: "Offers Released", icon: FileCheck, chip: "bg-info text-info-foreground" },
-  { label: "Rejected", icon: XCircle, chip: "bg-destructive text-white" },
+  { label: "Total Candidates", icon: Users, chip: "bg-info text-info-foreground", key: "totalCandidates" },
+  { label: "Active Candidates", icon: UserCheck, chip: "bg-success text-success-foreground", key: "activeCandidates" },
+  { label: "Active Requirements", icon: Briefcase, chip: "bg-brand text-primary-foreground", key: "activeRequirements" },
+  { label: "Recruiters", icon: Headset, chip: "bg-info text-info-foreground", key: "recruiters" },
+  { label: "Interviews Today", icon: CalendarClock, chip: "bg-warning text-warning-foreground", key: "interviewsToday" },
+  { label: "Placements", icon: Award, chip: "bg-success text-success-foreground", key: "placements" },
+  { label: "Pending Follow-ups", icon: BellRing, chip: "bg-warning text-warning-foreground", key: "pendingFollowups" },
+  { label: "Submissions Today", icon: Send, chip: "bg-brand text-primary-foreground", key: "submissionsToday" },
+  { label: "Offers Released", icon: FileCheck, chip: "bg-info text-info-foreground", key: "offersReleased" },
+  { label: "Rejected", icon: XCircle, chip: "bg-destructive text-white", key: "rejected" },
 ];
 
-export function StatCards() {
+export function StatCards({ metrics }: { metrics: DashboardMetrics }) {
   const root = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -63,7 +65,7 @@ export function StatCards() {
       ref={root}
       className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
     >
-      {METRICS.map(({ label, icon: Icon, chip }) => (
+      {METRICS.map(({ label, icon: Icon, chip, key }) => (
         <Card key={label} className="stat-card">
           <CardHeader>
             <div
@@ -77,8 +79,9 @@ export function StatCards() {
           </CardHeader>
           <CardContent className="flex flex-col gap-1">
             <span className="text-sm text-muted-foreground">{label}</span>
-            <span className="text-3xl font-semibold tracking-tight">—</span>
-            <span className="text-xs text-muted-foreground">Live in Plan 4</span>
+            <span className="text-3xl font-semibold tracking-tight">
+              {metrics[key]}
+            </span>
           </CardContent>
         </Card>
       ))}

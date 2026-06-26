@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed": "dotenv -e .env.local -- tsx ./scripts/seed.ts",
-    "seed:candidates": "dotenv -e .env.local -- tsx ./scripts/seed-candidates.ts"
+    "seed:candidates": "dotenv -e .env.local -- tsx ./scripts/seed-candidates.ts",
+    "seed:all": "dotenv -e .env.local -- tsx ./scripts/seed-all.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
