@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { ChevronDown, LogOut } from "lucide-react";
 
 import { signOut } from "@/app/auth/actions";
@@ -34,6 +35,7 @@ function initialsFrom(profile: Profile): string {
 export function Topbar({ profile }: { profile: Profile }) {
   const initials = initialsFrom(profile);
   const displayName = profile.full_name ?? profile.email;
+  const signOutFormRef = useRef<HTMLFormElement>(null);
 
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-2 border-b bg-background/70 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/50">
@@ -86,17 +88,17 @@ export function Topbar({ profile }: { profile: Profile }) {
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <form action={signOut} className="w-full">
-              <DropdownMenuItem
-                variant="destructive"
-                render={<button type="submit" className="w-full" />}
-              >
-                <LogOut />
-                Sign out
-              </DropdownMenuItem>
-            </form>
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => signOutFormRef.current?.requestSubmit()}
+            >
+              <LogOut />
+              Sign out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <form ref={signOutFormRef} action={signOut} className="hidden" />
       </div>
     </header>
   );
