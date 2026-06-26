@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { getCurrentProfile } from "@/lib/auth";
+import { sendMail } from "@/lib/mail";
 
 export async function signIn(_prev: unknown, formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -74,50 +75,63 @@ export async function inviteUser(_prev: unknown, formData: FormData) {
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const redirectTo = `${site}/auth/callback`;
 
-  // Send the email (via Supabase's configured SMTP). New email -> invite email
-  // (also creates the user); existing -> password-recovery email.
+  // Create the user silently (no Supabase email) or detect if they already exist.
   let reused = false;
   let userId: string | undefined;
-  let emailed = true;
 
-  const inv = await admin.auth.admin.inviteUserByEmail(email, { redirectTo });
-  if (inv.error) {
-    const msg = inv.error.message.toLowerCase();
+  const created = await admin.auth.admin.createUser({ email, email_confirm: false });
+  if (created.error) {
+    const msg = created.error.message.toLowerCase();
     const exists =
       msg.includes("already") ||
       msg.includes("registered") ||
       msg.includes("exists");
-    if (!exists) return { error: inv.error.message };
+    if (!exists) return { error: created.error.message };
     reused = true;
     const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
     userId = list?.users.find((u) => u.email === email)?.id;
-    const anon = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } },
-    );
-    const rec = await anon.auth.resetPasswordForEmail(email, { redirectTo });
-    if (rec.error) emailed = false;
   } else {
-    userId = inv.data.user?.id;
+    userId = created.data.user?.id;
   }
 
   if (userId) {
-    // Upsert so a profile is guaranteed even if one is missing.
     await admin
       .from("profiles")
       .upsert({ id: userId, email, role }, { onConflict: "id" });
   }
 
-  // Always also produce a copyable setup link (works even if email delivery
-  // isn't configured yet). Uses a fresh recovery token via /auth/confirm.
-  let setupLink: string | null = null;
-  const gen = await admin.auth.admin.generateLink({ type: "recovery", email });
+  // Generate a setup link and send it via our own SMTP.
+  const linkType = reused ? "recovery" : "invite";
+  const gen = await admin.auth.admin.generateLink({
+    type: linkType,
+    email,
+    options: { redirectTo },
+  });
   const token = gen.data?.properties?.hashed_token;
+  let setupLink: string | null = null;
   if (token) {
-    setupLink = `${site}/auth/confirm?token_hash=${token}&type=recovery&next=${encodeURIComponent(
+    setupLink = `${site}/auth/confirm?token_hash=${token}&type=${linkType}&next=${encodeURIComponent(
       "/auth/set-password",
     )}`;
+  }
+
+  let emailed = false;
+  if (setupLink) {
+    emailed = await sendMail({
+      to: email,
+      subject: "You've been invited to OpelSoft Dashboard",
+      text: `Hi,
+
+You've been invited to join the OpelSoft Dashboard as a ${role}.
+
+Click the link below to set your password and access the dashboard:
+
+${setupLink}
+
+This link expires in 24 hours. If you didn't expect this, you can ignore it.
+
+— OpelSoft Team`,
+    });
   }
 
   return {

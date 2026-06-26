@@ -23,20 +23,22 @@ function getTransport() {
   return transport;
 }
 
-// Fire-and-forget: never throw into the caller — a failed email must not fail the task.
+// Returns true if sent, false if skipped/failed. Never throws into the caller.
 export async function sendMail(opts: {
   to: string;
   subject: string;
   text: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const t = getTransport();
   if (!t) {
     console.warn("[mail] SMTP not configured (SMTP_USER/SMTP_PASS); skipping email to", opts.to);
-    return;
+    return false;
   }
   try {
     await t.sendMail({ from, ...opts });
+    return true;
   } catch (e) {
     console.error("[mail] send failed:", e);
+    return false;
   }
 }
