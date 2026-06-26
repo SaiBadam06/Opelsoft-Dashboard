@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 
 import { signOut } from "@/app/auth/actions";
 import type { Profile } from "@/lib/auth";
@@ -48,37 +48,50 @@ export function Topbar({ profile }: { profile: Profile }) {
             render={
               <Button
                 variant="ghost"
-                size="icon"
-                aria-label="Open user menu"
-                className="rounded-full"
+                aria-label="Open profile menu"
+                className="h-10 gap-2 px-1.5 sm:pr-2.5"
               />
             }
           >
-            <Avatar>
-              <AvatarFallback>{initials}</AvatarFallback>
+            <Avatar className="size-7">
+              <AvatarFallback className="bg-primary text-xs text-primary-foreground">
+                {initials}
+              </AvatarFallback>
             </Avatar>
+            <span className="hidden max-w-[10rem] truncate text-sm font-medium sm:inline">
+              {displayName}
+            </span>
+            <ChevronDown className="hidden text-muted-foreground sm:inline" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="flex flex-col gap-0.5">
-              <span className="truncate text-sm font-medium text-foreground">
-                {displayName}
-              </span>
-              <span className="truncate text-xs font-normal text-muted-foreground">
-                {profile.email}
-              </span>
-              <span className="mt-1 inline-flex w-fit items-center rounded-md bg-muted px-1.5 py-0.5 text-[0.65rem] font-medium tracking-wide text-muted-foreground uppercase">
-                {profile.role}
-              </span>
+          <DropdownMenuContent align="end" className="w-60">
+            <DropdownMenuLabel className="flex items-center gap-3">
+              <Avatar className="size-9">
+                <AvatarFallback className="bg-primary text-sm text-primary-foreground">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate text-sm font-medium text-foreground">
+                  {displayName}
+                </span>
+                <span className="truncate text-xs font-normal text-muted-foreground">
+                  {profile.email}
+                </span>
+                <span className="mt-1 inline-flex w-fit items-center rounded-md bg-muted px-1.5 py-0.5 text-[0.65rem] font-medium tracking-wide text-muted-foreground uppercase">
+                  {profile.role}
+                </span>
+              </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <form action={signOut}>
-              <DropdownMenuItem
-                render={<button type="submit" className="w-full" />}
-              >
-                <LogOut />
-                Sign out
-              </DropdownMenuItem>
-            </form>
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => {
+                void signOut();
+              }}
+            >
+              <LogOut />
+              Sign out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
