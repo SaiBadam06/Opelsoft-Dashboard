@@ -1,0 +1,30 @@
+# Builds the container in Google Cloud Build (no local Docker needed) and pushes
+# it to Artifact Registry. The NEXT_PUBLIC_* values are passed as build args
+# because Next.js inlines them into the browser bundle at build time.
+#
+# Run with:
+#   gcloud builds submit --config cloudbuild.yaml \
+#     --substitutions=_IMAGE=<IMAGE>,_SUPABASE_URL=<URL>,_SUPABASE_ANON_KEY=<KEY>,_SITE_URL=<URL>
+
+substitutions:
+  _IMAGE: ""
+  _SUPABASE_URL: ""
+  _SUPABASE_ANON_KEY: ""
+  _SITE_URL: ""
+
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "--build-arg=NEXT_PUBLIC_SUPABASE_URL=${_SUPABASE_URL}"
+      - "--build-arg=NEXT_PUBLIC_SUPABASE_ANON_KEY=${_SUPABASE_ANON_KEY}"
+      - "--build-arg=NEXT_PUBLIC_SITE_URL=${_SITE_URL}"
+      - "-t=${_IMAGE}"
+      - "."
+
+images:
+  - "${_IMAGE}"
+
+options:
+  machineType: "E2_HIGHCPU_8"
+  logging: CLOUD_LOGGING_ONLY
