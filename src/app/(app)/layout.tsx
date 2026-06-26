@@ -1,6 +1,7 @@
 import { requireProfile } from "@/lib/auth";
-import { Sidebar } from "@/components/app-shell/sidebar";
+import { AppSidebar } from "@/components/app-shell/sidebar";
 import { Topbar } from "@/components/app-shell/topbar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default async function AppLayout({
   children,
@@ -9,12 +10,12 @@ export default async function AppLayout({
 }) {
   const profile = await requireProfile();
   return (
-    <div className="flex min-h-screen">
-      <Sidebar role={profile.role} />
-      <div className="flex flex-1 flex-col">
+    <SidebarProvider>
+      <AppSidebar role={profile.role} />
+      <SidebarInset>
         <Topbar profile={profile} />
         <main className="flex-1 p-6">{children}</main>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

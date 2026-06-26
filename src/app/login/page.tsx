@@ -1,49 +1,185 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { Loader2, Lock, Mail } from "lucide-react";
 import { signIn } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(signIn, null);
+  const root = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.from("[data-animate='brand']", {
+          opacity: 0,
+          scale: 1.04,
+          duration: 0.6,
+          ease: "power2.out",
+        });
+
+        gsap.from("[data-animate='stagger']", {
+          opacity: 0,
+          y: 12,
+          duration: 0.5,
+          ease: "power2.out",
+          stagger: 0.08,
+          delay: 0.1,
+        });
+      });
+    },
+    { scope: root }
+  );
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="items-center">
-          <Image
-            src="/logo.svg"
-            alt="OpelSoft"
-            width={170}
-            height={46}
-            className="h-10 w-auto"
-            priority
-          />
-          <p className="text-sm text-muted-foreground">Staffing Dashboard</p>
-        </CardHeader>
-        <CardContent>
-          <form action={action} className="space-y-4">
-            <div className="space-y-2">
+    <main ref={root} className="grid min-h-screen lg:grid-cols-2">
+      {/* Brand panel — desktop only */}
+      <aside
+        data-animate="brand"
+        className="relative hidden overflow-hidden bg-gradient-to-br from-primary via-primary/85 to-info p-12 lg:flex lg:flex-col lg:justify-between"
+      >
+        {/* Decorative blurred orbs */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 -left-16 size-80 rounded-full bg-white/10 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 bottom-0 size-96 rounded-full bg-white/10 blur-3xl"
+        />
+
+        <div className="relative">
+          <div className="inline-flex rounded-xl bg-white/10 px-4 py-3 backdrop-blur-sm ring-1 ring-white/20">
+            <Image
+              src="/logo.svg"
+              alt="OpelSoft"
+              width={170}
+              height={46}
+              className="h-9 w-auto brightness-0 invert"
+              priority
+            />
+          </div>
+        </div>
+
+        <div className="relative flex flex-col gap-4 text-primary-foreground">
+          <h1 className="text-4xl font-semibold tracking-tight text-balance">
+            Staffing, streamlined.
+          </h1>
+          <p className="max-w-md text-base/relaxed text-primary-foreground/80">
+            Manage consultants, requirements, submissions, and placements in one
+            place. OpelSoft keeps your bench sales pipeline moving from first
+            contact to closed deal.
+          </p>
+        </div>
+
+        <p className="relative text-sm text-primary-foreground/60">
+          &copy; {new Date().getFullYear()} OpelSoft. All rights reserved.
+        </p>
+      </aside>
+
+      {/* Login form panel */}
+      <div className="flex items-center justify-center bg-background p-6 sm:p-10">
+        <div className="flex w-full max-w-sm flex-col gap-8">
+          {/* Mobile logo */}
+          <div
+            data-animate="stagger"
+            className="flex justify-center lg:hidden"
+          >
+            <Image
+              src="/logo.svg"
+              alt="OpelSoft"
+              width={170}
+              height={46}
+              className="h-10 w-auto"
+              priority
+            />
+          </div>
+
+          <div data-animate="stagger" className="flex flex-col gap-2">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Welcome back
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Sign in to your OpelSoft dashboard to continue.
+            </p>
+          </div>
+
+          <form action={action} className="flex flex-col gap-5">
+            <div data-animate="stagger" className="flex flex-col gap-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" required />
+              <div className="relative">
+                <Mail
+                  aria-hidden
+                  className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@company.com"
+                  required
+                  className="h-10 pl-8"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
+
+            <div data-animate="stagger" className="flex flex-col gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
+              <div className="relative">
+                <Lock
+                  aria-hidden
+                  className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  required
+                  className="h-10 pl-8"
+                />
+              </div>
             </div>
+
             {state?.error && (
-              <p className="text-sm text-red-600">{state.error}</p>
+              <p
+                role="alert"
+                className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                {state.error}
+              </p>
             )}
-            <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? "Signing in…" : "Sign in"}
+
+            <Button
+              type="submit"
+              size="lg"
+              disabled={pending}
+              data-animate="stagger"
+              className={cn("h-10 w-full", pending && "cursor-wait")}
+            >
+              {pending ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Signing in…
+                </>
+              ) : (
+                "Sign in"
+              )}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </main>
   );
 }

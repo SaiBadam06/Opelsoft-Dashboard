@@ -4,50 +4,93 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV_ITEMS, canAccess, type Role } from "@/lib/roles";
-import { cn } from "@/lib/utils";
+import {
+  LayoutDashboard,
+  Users,
+  KanbanSquare,
+  Briefcase,
+  Send,
+  CalendarClock,
+  Award,
+  Building2,
+  ListTodo,
+  ShieldCheck,
+  type LucideIcon,
+} from "lucide-react";
 
-export function Sidebar({ role }: { role: Role }) {
+import { type Role, canAccess, NAV_ITEMS } from "@/lib/roles";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  "/dashboard": LayoutDashboard,
+  "/consultants": Users,
+  "/pipeline": KanbanSquare,
+  "/requirements": Briefcase,
+  "/submissions": Send,
+  "/interviews": CalendarClock,
+  "/placements": Award,
+  "/vendors": Building2,
+  "/tasks": ListTodo,
+  "/users": ShieldCheck,
+};
+
+export function AppSidebar({ role }: { role: Role }) {
   const pathname = usePathname();
-  const items = NAV_ITEMS.filter((i) => canAccess(role, i.minRole));
-
-  // Gate active styling behind mount so server and client first render agree
-  // (avoids a hydration mismatch during the post-login redirect).
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  const items = NAV_ITEMS.filter((item) => canAccess(role, item.minRole));
+
   return (
-    <aside className="hidden w-60 shrink-0 border-r bg-background md:block">
-      <div className="px-5 py-4">
-        <Link href="/dashboard">
+    <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <Link
+          href="/dashboard"
+          className="flex h-8 items-center px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+        >
           <Image
             src="/logo.svg"
             alt="OpelSoft"
-            width={119}
-            height={32}
-            className="h-7 w-auto"
+            width={120}
+            height={28}
             priority
+            className="h-7 w-auto"
           />
         </Link>
-      </div>
-      <nav className="flex flex-col gap-1 px-2">
-        {items.map((item) => {
-          const active = mounted && pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground",
-                active && "bg-muted font-medium text-foreground",
-              )}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarMenu>
+            {items.map((item) => {
+              const Icon = ICON_MAP[item.href];
+              const isActive =
+                mounted &&
+                (pathname === item.href ||
+                  pathname.startsWith(`${item.href}/`));
+              return (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    isActive={isActive}
+                    tooltip={item.label}
+                    render={<Link href={item.href} />}
+                  >
+                    {Icon ? <Icon /> : null}
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
   );
 }
