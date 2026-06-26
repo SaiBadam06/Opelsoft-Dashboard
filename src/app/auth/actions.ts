@@ -63,46 +63,42 @@ export async function inviteUser(_prev: unknown, formData: FormData) {
   );
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  // Email links land on the client-side callback, which completes the session
-  // (code / token_hash / hash tokens) and forwards to /auth/set-password.
-  const redirectTo = `${site}/auth/callback`;
 
-  // New email -> send the "Invite user" email. If the user already exists,
-  // re-send setup via a password-recovery email instead of erroring.
-  let reused = false;
-  const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo,
-  });
-
-  if (error) {
-    const msg = error.message.toLowerCase();
+  // Generate an account-setup link to show in the dashboard. New email -> an
+  // "invite" link (also creates the user); existing email -> a "recovery" link.
+  let type: "invite" | "recovery" = "invite";
+  let gen = await admin.auth.admin.generateLink({ type: "invite", email });
+  if (gen.error) {
+    const msg = gen.error.message.toLowerCase();
     const exists =
       msg.includes("already") ||
       msg.includes("registered") ||
       msg.includes("exists");
-    if (!exists) return { error: error.message };
-
-    reused = true;
-    // Update the existing user's role, then email a recovery (setup) link.
-    const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
-    const existing = list?.users.find((u) => u.email === email);
-    if (existing) {
-      await admin.from("profiles").update({ role }).eq("id", existing.id);
-    }
-    const anon = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } },
-    );
-    const { error: recErr } = await anon.auth.resetPasswordForEmail(email, {
-      redirectTo,
-    });
-    if (recErr) return { error: recErr.message };
-  } else if (data.user) {
-    await admin.from("profiles").update({ role }).eq("id", data.user.id);
+    if (!exists) return { error: gen.error.message };
+    type = "recovery";
+    gen = await admin.auth.admin.generateLink({ type: "recovery", email });
+    if (gen.error) return { error: gen.error.message };
   }
 
-  return { ok: true as const, email, role, reused };
+  const userId = gen.data.user?.id;
+  if (userId) {
+    await admin.from("profiles").update({ role }).eq("id", userId);
+  }
+
+  const token = gen.data.properties?.hashed_token;
+  if (!token) return { error: "Could not generate a setup link." };
+
+  const setupLink = `${site}/auth/confirm?token_hash=${token}&type=${type}&next=${encodeURIComponent(
+    "/auth/set-password",
+  )}`;
+
+  return {
+    ok: true as const,
+    email,
+    role,
+    reused: type === "recovery",
+    setupLink,
+  };
 }
 
 export async function updateUserRole(

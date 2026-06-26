@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
-import { Loader2, Mail } from "lucide-react";
+import { useActionState, useEffect, useState } from "react";
+import { Check, Copy, Loader2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { inviteUser } from "@/app/auth/actions";
@@ -9,62 +9,107 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+type SetupInfo = { email: string; setupLink: string; reused: boolean };
+
 export function InviteForm() {
   const [state, action, pending] = useActionState(inviteUser, null);
-  const formRef = useRef<HTMLFormElement>(null);
+  const [setup, setSetup] = useState<SetupInfo | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!state) return;
     if ("ok" in state && state.ok) {
+      setSetup({
+        email: state.email,
+        setupLink: state.setupLink,
+        reused: state.reused,
+      });
+      setCopied(false);
       toast.success(
         state.reused
-          ? `Setup email re-sent to ${state.email}`
-          : `Invitation email sent to ${state.email}`,
+          ? `${state.email} already exists — new setup link generated`
+          : `Setup link generated for ${state.email}`,
       );
-      formRef.current?.reset();
     } else if ("error" in state && state.error) {
       toast.error(state.error);
     }
   }, [state]);
 
+  async function copyLink() {
+    if (!setup) return;
+    await navigator.clipboard.writeText(setup.setupLink);
+    setCopied(true);
+    toast.success("Setup link copied");
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
-    <form ref={formRef} action={action} className="flex flex-wrap items-end gap-3">
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          required
-          placeholder="teammate@opelsoft.com"
-          className="w-64"
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="role">Role</Label>
-        <select
-          id="role"
-          name="role"
-          className="h-9 rounded-md border bg-background px-3 text-sm"
-          defaultValue="coordinator"
-        >
-          <option value="coordinator">Coordinator</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
-      <Button type="submit" disabled={pending}>
-        {pending ? (
-          <>
-            <Loader2 className="size-4 animate-spin" />
-            Sending…
-          </>
-        ) : (
-          <>
-            <Mail />
-            Send invite
-          </>
-        )}
-      </Button>
-    </form>
+    <div className="flex flex-col gap-4">
+      <form action={action} className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            required
+            placeholder="teammate@opelsoft.com"
+            className="w-64"
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="role">Role</Label>
+          <select
+            id="role"
+            name="role"
+            className="h-9 rounded-md border bg-background px-3 text-sm"
+            defaultValue="coordinator"
+          >
+            <option value="coordinator">Coordinator</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <Button type="submit" disabled={pending}>
+          {pending ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              Generating…
+            </>
+          ) : (
+            <>
+              <UserPlus />
+              Generate setup link
+            </>
+          )}
+        </Button>
+      </form>
+
+      {setup && (
+        <div className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3">
+          <p className="text-sm font-medium">Setup link for {setup.email}</p>
+          <p className="text-xs text-muted-foreground">
+            Share this with them. Opening it lets them set a password and finish
+            creating their account.
+          </p>
+          <div className="flex items-center gap-2">
+            <Input
+              readOnly
+              value={setup.setupLink}
+              className="font-mono text-xs"
+              onFocus={(e) => e.currentTarget.select()}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={copyLink}
+              aria-label="Copy setup link"
+            >
+              {copied ? <Check /> : <Copy />}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
