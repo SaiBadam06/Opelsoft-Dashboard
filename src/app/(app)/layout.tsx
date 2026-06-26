@@ -17,7 +17,7 @@ export default async function AppLayout({
       <AppSidebar role={profile.role} />
       <SidebarInset>
         <Topbar profile={profile} />
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 bg-muted/30 p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

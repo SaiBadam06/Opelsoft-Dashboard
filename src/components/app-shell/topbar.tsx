@@ -35,7 +35,7 @@ export function Topbar({ profile }: { profile: Profile }) {
   const displayName = profile.full_name ?? profile.email;
 
   return (
-    <header className="flex h-14 items-center justify-between gap-2 border-b px-4">
+    <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-2 border-b bg-background/70 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/50">
       <div className="flex items-center gap-2">
         <SidebarTrigger />
       </div>

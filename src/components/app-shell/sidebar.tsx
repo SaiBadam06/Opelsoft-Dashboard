@@ -19,10 +19,12 @@ import {
 } from "lucide-react";
 
 import { type Role, canAccess, NAV_ITEMS } from "@/lib/roles";
+import { cn } from "@/lib/utils";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -50,11 +52,11 @@ export function AppSidebar({ role }: { role: Role }) {
   const items = NAV_ITEMS.filter((item) => canAccess(role, item.minRole));
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
+    <Sidebar collapsible="icon" className="border-r-0">
+      <SidebarHeader className="px-3 py-4">
         <Link
           href="/dashboard"
-          className="flex h-8 items-center px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+          className="flex h-9 items-center px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
         >
           <Image
             src="/logo.svg"
@@ -62,13 +64,24 @@ export function AppSidebar({ role }: { role: Role }) {
             width={150}
             height={36}
             priority
-            className="h-9 w-auto"
+            className="h-9 w-auto group-data-[collapsible=icon]:hidden"
+          />
+          <Image
+            src="/logo.svg"
+            alt="OpelSoft"
+            width={36}
+            height={36}
+            priority
+            className="hidden h-8 w-8 max-w-8 object-cover object-left group-data-[collapsible=icon]:block"
           />
         </Link>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="px-2">
         <SidebarGroup>
-          <SidebarMenu>
+          <SidebarGroupLabel className="px-2 text-[0.7rem] font-semibold tracking-wider text-muted-foreground/70 uppercase">
+            Workspace
+          </SidebarGroupLabel>
+          <SidebarMenu className="gap-1">
             {items.map((item) => {
               const Icon = ICON_MAP[item.href];
               const isActive =
@@ -81,7 +94,12 @@ export function AppSidebar({ role }: { role: Role }) {
                     size="lg"
                     isActive={isActive}
                     tooltip={item.label}
-                    className="h-11 gap-3 text-sm font-medium [&>svg]:size-[1.15rem] [&>svg]:shrink-0"
+                    className={cn(
+                      "h-11 gap-3 rounded-xl text-sm font-medium transition-colors [&>svg]:size-[1.15rem] [&>svg]:shrink-0",
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30 hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
+                        : "text-sidebar-foreground/70 hover:text-sidebar-foreground",
+                    )}
                     render={<Link href={item.href} />}
                   >
                     {Icon ? <Icon strokeWidth={2} /> : null}
