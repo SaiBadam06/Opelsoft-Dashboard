@@ -31,7 +31,7 @@ import {
 
 const ICON_MAP: Record<string, LucideIcon> = {
   "/dashboard": LayoutDashboard,
-  "/consultants": Users,
+  "/candidates": Users,
   "/pipeline": KanbanSquare,
   "/requirements": Briefcase,
   "/submissions": Send,

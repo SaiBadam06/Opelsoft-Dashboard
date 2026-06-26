@@ -30,6 +30,15 @@ generic full-time-recruiting template.
 - **Prime / Layer** = OpelSoft's position in the vendor chain (Prime = direct
   with the client's vendor; Layer = behind another sub-vendor).
 
+> **Model amendment (2026-06-26):** There are only **two managed parties —
+> Vendors and Candidates.** **Vendors provide the jobs** (they send the
+> requirements); **Candidates are the people seeking jobs** (our bench talent).
+> **There is no Client entity.** The end-client company name (e.g. Wipro/UHG,
+> DTRA) is kept only as an optional free-text field on requirements /
+> submissions / placements for reference — not a first-class table or nav item.
+> "Consultant" and "Candidate" mean the same thing; the UI uses **Candidate**.
+> This overrides any "Client" references below.
+
 ## 3. Decisions (locked)
 
 | Decision | Choice |
@@ -90,8 +99,9 @@ view** over a small set of core tables. No double-entry.
 - **placements** — consultant, recruiter, OPT recruiter, vendor, client,
   new/exp, rate, placement date, project start date, BGV + date, In/Out,
   project end date, feedback
-- **vendors** — name, contact name, email, phone (first-class, reusable)
-- **clients** — name, notes (first-class; powers "Top Clients")
+- **vendors** — name, contact name, email, phone (first-class; the job
+  providers — powers "Top Vendors"). End-client name is an optional free-text
+  field on requirements/submissions/placements, **not** its own table.
 - **tasks** — type (Call Candidate, Follow-up, Schedule Interview, Collect
   Documents, Send Resume, Offer Discussion), consultant, assigned coordinator,
   due date, status. Feeds "Pending Follow-ups."
@@ -123,14 +133,14 @@ view** over a small set of core tables. No double-entry.
 ## 7. Modules & UI
 
 **Navigation (left sidebar):** Dashboard, Consultants, Pipeline, Requirements,
-Submissions, Interviews, Placements, Vendors & Clients, Tasks. Top bar with
+Submissions, Interviews, Placements, Vendors, Tasks. Top bar with
 global search and user menu.
 
 **Dashboard** — cards: Total Candidates, Active Candidates, Active Requirements,
 Recruiters, Interviews Today, Placements, Pending Follow-ups, Submissions Today,
 Offers Released, Rejected. Charts (Phase 2): Candidate Pipeline, Recruiter
 Performance, Placements per Month, Interview Conversion, Requirements Filled,
-Top Clients. Recent Activity feed from `activity_log`.
+Top Vendors. Recent Activity feed from `activity_log`.
 
 **Consultant module** — list with filters/saved views; detail with Personal /
 Professional / Status / Documents / Timeline tabs. **Pipeline** is a

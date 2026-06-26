@@ -14,13 +14,13 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", minRole: "any" },
-  { label: "Consultants", href: "/consultants", minRole: "any" },
+  { label: "Candidates", href: "/candidates", minRole: "any" },
   { label: "Pipeline", href: "/pipeline", minRole: "any" },
   { label: "Requirements", href: "/requirements", minRole: "any" },
   { label: "Submissions", href: "/submissions", minRole: "any" },
   { label: "Interviews", href: "/interviews", minRole: "any" },
   { label: "Placements", href: "/placements", minRole: "any" },
-  { label: "Vendors & Clients", href: "/vendors", minRole: "any" },
+  { label: "Vendors", href: "/vendors", minRole: "any" },
   { label: "Tasks", href: "/tasks", minRole: "any" },
   { label: "Users", href: "/users", minRole: "admin" },
 ];
