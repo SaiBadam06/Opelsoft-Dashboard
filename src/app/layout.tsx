@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Plus_Jakarta_Sans({
+// Space Grotesk — a distinctive, technical, mono-derived grotesque for a
+// modern engineering feel across the UI.
+const geistSans = Space_Grotesk({
   variable: "--font-geist-sans",
   subsets: ["latin"],
   display: "swap",

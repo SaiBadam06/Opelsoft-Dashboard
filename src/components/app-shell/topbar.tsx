@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -64,7 +65,8 @@ export function Topbar({ profile }: { profile: Profile }) {
             <ChevronDown className="hidden text-muted-foreground sm:inline" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-60">
-            <DropdownMenuLabel className="flex items-center gap-3">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="flex items-center gap-3">
               <Avatar className="size-9">
                 <AvatarFallback className="bg-primary text-sm text-primary-foreground">
                   {initials}
@@ -81,7 +83,8 @@ export function Topbar({ profile }: { profile: Profile }) {
                   {profile.role}
                 </span>
               </div>
-            </DropdownMenuLabel>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <form action={signOut} className="w-full">
               <DropdownMenuItem
