@@ -1,19 +1,38 @@
 "use client";
 
 import { useActionState } from "react";
-import { Loader2, Lock } from "lucide-react";
+import { Loader2, Lock, Mail } from "lucide-react";
 import { setPassword } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function SetPasswordForm() {
+export function SetPasswordForm({ email }: { email: string }) {
   const [state, action, pending] = useActionState(setPassword, null);
 
   return (
     <form action={action} className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <Label htmlFor="password">New password</Label>
+        <Label htmlFor="email">Email</Label>
+        <div className="relative">
+          <Mail
+            aria-hidden
+            className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            value={email}
+            readOnly
+            aria-readonly
+            className="h-10 cursor-not-allowed bg-muted pl-8 text-muted-foreground"
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="password">Create password</Label>
         <div className="relative">
           <Lock
             aria-hidden
@@ -65,10 +84,10 @@ export function SetPasswordForm() {
         {pending ? (
           <>
             <Loader2 className="size-4 animate-spin" />
-            Saving…
+            Creating account…
           </>
         ) : (
-          "Set password & continue"
+          "Create account & continue"
         )}
       </Button>
     </form>

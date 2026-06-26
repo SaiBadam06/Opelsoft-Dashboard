@@ -22,14 +22,14 @@ export default async function SetPasswordPage() {
             className="h-9 w-auto"
             priority
           />
-          <CardTitle className="text-lg">Set your password</CardTitle>
+          <CardTitle className="text-lg">Create your account</CardTitle>
           <p className="text-center text-sm text-muted-foreground">
-            Welcome, {profile.full_name ?? profile.email}. Choose a password to
-            finish setting up your account.
+            You&apos;ve been invited to OpelSoft. Set a password to finish
+            creating your account.
           </p>
         </CardHeader>
         <CardContent>
-          <SetPasswordForm />
+          <SetPasswordForm email={profile.email} />
         </CardContent>
       </Card>
     </main>
