@@ -22,6 +22,7 @@ import {
 import {
   deleteInterview,
   setInterviewResult,
+  setInterviewRound,
 } from "@/app/(app)/interviews/actions";
 import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/format";
@@ -67,6 +68,84 @@ function matches(i: InterviewRow, q: string): boolean {
     .join(" ")
     .toLowerCase();
   return haystack.includes(q);
+}
+
+const ROUND_OPTIONS = [
+  "Screening",
+  "R1",
+  "R2",
+  "R3",
+  "Final",
+  "HR",
+];
+
+function InterviewRoundSelect({
+  id,
+  round,
+}: {
+  id: string;
+  round: string | null;
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState<string | null>(round);
+  const [pending, startTransition] = useTransition();
+
+  function choose(next: string | null) {
+    if (next === value) return;
+    const prev = value;
+    setValue(next);
+    startTransition(async () => {
+      // Need to import setInterviewRound above
+      const res = await setInterviewRound(id, next);
+      if (res && "error" in res) {
+        toast.error(res.error);
+        setValue(prev);
+        return;
+      }
+      toast.success("Round updated");
+      router.refresh();
+    });
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        disabled={pending}
+        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          "inline-flex w-28 items-center justify-between gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring",
+          pending && "opacity-60",
+        )}
+      >
+        <span className="truncate">{value || DASH}</span>
+        <ChevronDown className="size-3 shrink-0 opacity-80" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        className="w-32"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <DropdownMenuGroup>
+          <DropdownMenuItem onClick={() => choose(null)} className="gap-2 text-muted-foreground">
+            <span className="flex-1">Clear</span>
+            {value === null ? <Check className="size-3.5" /> : null}
+          </DropdownMenuItem>
+          {ROUND_OPTIONS.map((o) => (
+            <DropdownMenuItem
+              key={o}
+              onClick={() => choose(o)}
+              className="gap-2"
+            >
+              <span className="flex-1">{o}</span>
+              {o === value ? (
+                <Check className="size-3.5 text-muted-foreground" />
+              ) : null}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 // Inline, fully-styled result editor for the interviews table.
@@ -292,7 +371,9 @@ export function InterviewsTable({
                     {i.candidate_name ?? DASH}
                   </TableCell>
                   <TableCell>{i.requirement_title ?? DASH}</TableCell>
-                  <TableCell>{i.round ?? DASH}</TableCell>
+                  <TableCell>
+                    <InterviewRoundSelect id={i.id} round={i.round} />
+                  </TableCell>
                   <TableCell>{i.mode ?? DASH}</TableCell>
                   <TableCell>{i.interviewer ?? DASH}</TableCell>
                   <TableCell>

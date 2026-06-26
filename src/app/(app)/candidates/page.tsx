@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { listCandidates } from "@/lib/candidates";
 import { Button } from "@/components/ui/button";
 import { CandidatesTable } from "./candidates-table";
+import { ImportCandidatesButton } from "./import-candidates-button";
 
 export default async function CandidatesPage() {
   const candidates = await listCandidates();
@@ -15,10 +16,13 @@ export default async function CandidatesPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Candidates</h1>
           <p className="text-sm text-muted-foreground">Your bench talent</p>
         </div>
-        <Button render={<Link href="/candidates/new" />}>
-          <Plus />
-          Add candidate
-        </Button>
+        <div className="flex items-center gap-2">
+          <ImportCandidatesButton />
+          <Button render={<Link href="/candidates/new" />}>
+            <Plus />
+            Add candidate
+          </Button>
+        </div>
       </div>
 
       <CandidatesTable candidates={candidates} />

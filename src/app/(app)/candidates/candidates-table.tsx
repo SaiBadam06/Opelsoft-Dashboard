@@ -78,6 +78,7 @@ export function CandidatesTable({ candidates }: { candidates: Candidate[] }) {
               <TableHead>Rate</TableHead>
               <TableHead>Visa</TableHead>
               <TableHead>Location</TableHead>
+              <TableHead>Coordinator</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Stage</TableHead>
             </TableRow>
@@ -86,7 +87,7 @@ export function CandidatesTable({ candidates }: { candidates: Candidate[] }) {
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="py-10 text-center text-muted-foreground"
                 >
                   No matches
@@ -121,6 +122,9 @@ export function CandidatesTable({ candidates }: { candidates: Candidate[] }) {
                     </div>
                   </TableCell>
                   <TableCell>{c.location ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground whitespace-nowrap">
+                    {c.coordinator?.full_name ?? c.coordinator?.email ?? "—"}
+                  </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <StatusSelect id={c.id} status={c.status} />
                   </TableCell>

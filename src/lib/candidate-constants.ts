@@ -31,11 +31,8 @@ export interface Option<T extends string> {
 
 export const STATUS_OPTIONS: Option<CandidateStatus>[] = [
   { value: "available", label: "Available" },
-  { value: "interviewing", label: "Interviewing" },
-  { value: "submitted", label: "Submitted" },
   { value: "offered", label: "Offered" },
   { value: "placed", label: "Placed" },
-  { value: "rejected", label: "Rejected" },
   { value: "inactive", label: "Inactive" },
 ];
 

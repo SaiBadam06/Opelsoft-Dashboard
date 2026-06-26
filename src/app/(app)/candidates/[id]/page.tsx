@@ -14,6 +14,7 @@ import {
   stageLabel,
 } from "@/lib/candidate-constants";
 import { formatDateTime } from "@/lib/format";
+import { listDocuments } from "@/app/(app)/candidates/document-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +28,7 @@ import {
   ReassignControl,
   DeleteCandidateButton,
 } from "../reassign-control";
+import { DocumentsTab } from "@/app/(app)/candidates/documents-tab";
 
 const DASH = "—";
 
@@ -87,6 +89,7 @@ export default async function Page({
   if (!candidate) notFound();
 
   const c: Candidate = candidate;
+  const documents = await listDocuments(id);
 
   return (
     <div className="flex flex-col gap-6">
@@ -143,6 +146,7 @@ export default async function Page({
           <TabsTrigger value="professional">Professional</TabsTrigger>
           <TabsTrigger value="status">Status</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -171,9 +175,7 @@ export default async function Page({
                 <Field label="Relocation">
                   <Text value={c.relocation} />
                 </Field>
-                <Field label="Petitioner">
-                  <Text value={c.petitioner} />
-                </Field>
+
                 <Field label="Availability">
                   <Text value={c.availability} />
                 </Field>
@@ -257,6 +259,10 @@ export default async function Page({
               </p>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="documents">
+          <DocumentsTab candidateId={id} documents={documents} />
         </TabsContent>
       </Tabs>
     </div>

@@ -48,6 +48,19 @@ export async function setInterviewResult(id: string, result: InterviewResult) {
   return { ok: true as const };
 }
 
+export async function setInterviewRound(id: string, round: string | null) {
+  const me = await getCurrentProfile();
+  if (!me) return { error: "Not authorized" };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("interviews")
+    .update({ round })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/interviews");
+  return { ok: true as const };
+}
+
 export async function deleteInterview(id: string) {
   const me = await getCurrentProfile();
   if (me?.role !== "admin") return { error: "Only admins can delete." };

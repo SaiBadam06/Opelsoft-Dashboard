@@ -12,7 +12,6 @@ export interface Candidate {
   rate: number | null;
   visa: string | null;
   relocation: string | null;
-  petitioner: string | null;
   availability: string | null;
   linkedin: string | null;
   github: string | null;
@@ -32,10 +31,11 @@ export interface Candidate {
   updated_by: string | null;
   created_at: string;
   updated_at: string;
+  coordinator?: { full_name: string | null; email: string | null } | null;
 }
 
 const COLUMNS =
-  "id, full_name, email, phone, location, experience_years, current_company, rate, visa, relocation, petitioner, availability, linkedin, github, portfolio, primary_skills, secondary_skills, certifications, projects, education, preferred_location, status, pipeline_stage, visa_transfer, notes, assigned_coordinator_id, created_by, updated_by, created_at, updated_at";
+  "id, full_name, email, phone, location, experience_years, current_company, rate, visa, relocation, availability, linkedin, github, portfolio, primary_skills, secondary_skills, certifications, projects, education, preferred_location, status, pipeline_stage, visa_transfer, notes, assigned_coordinator_id, created_by, updated_by, created_at, updated_at";
 
 // RLS automatically scopes these to what the current user may see
 // (admins: all; coordinators: only their own).
@@ -43,7 +43,7 @@ export async function listCandidates(): Promise<Candidate[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("candidates")
-    .select(COLUMNS)
+    .select(`${COLUMNS}, coordinator:profiles!candidates_assigned_coordinator_id_fkey(full_name, email)`)
     .order("updated_at", { ascending: false });
   return (data as Candidate[] | null) ?? [];
 }

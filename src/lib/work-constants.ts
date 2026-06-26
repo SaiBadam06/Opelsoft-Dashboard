@@ -77,6 +77,8 @@ export function interviewResultBadgeClass(r: InterviewResult): string {
       return "bg-destructive text-white";
     case "cancelled":
       return "bg-muted text-muted-foreground";
+    default:
+      return "bg-muted text-muted-foreground";
   }
 }
 
@@ -88,6 +90,8 @@ export function placementStatusBadgeClass(s: PlacementStatus): string {
       return "bg-primary text-primary-foreground";
     case "terminated":
       return "bg-destructive text-white";
+    default:
+      return "bg-muted text-muted-foreground";
   }
 }
 

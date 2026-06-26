@@ -70,6 +70,8 @@ export function requirementStatusBadgeClass(s: RequirementStatus): string {
       return "bg-primary text-primary-foreground";
     case "closed":
       return "bg-muted text-muted-foreground";
+    default:
+      return "bg-muted text-muted-foreground";
   }
 }
 
@@ -82,6 +84,8 @@ export function priorityBadgeClass(p: RequirementPriority): string {
     case "medium":
       return "bg-info text-info-foreground";
     case "low":
+      return "bg-muted text-muted-foreground";
+    default:
       return "bg-muted text-muted-foreground";
   }
 }
@@ -98,5 +102,7 @@ export function submissionStatusBadgeClass(s: SubmissionStatus): string {
       return "bg-success text-success-foreground";
     case "rejected":
       return "bg-destructive text-white";
+    default:
+      return "bg-muted text-muted-foreground";
   }
 }

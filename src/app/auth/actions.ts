@@ -56,6 +56,15 @@ export async function inviteUser(_prev: unknown, formData: FormData) {
     return { error: "Invalid role" };
   }
 
+  // Restrict invites to the company domains.
+  const ALLOWED_DOMAINS = ["personaon.com", "opelsoft.com"];
+  const domain = email.split("@")[1] ?? "";
+  if (!ALLOWED_DOMAINS.includes(domain)) {
+    return {
+      error: "Invites are limited to @personaon.com and @opelsoft.com addresses.",
+    };
+  }
+
   const admin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -63,43 +72,60 @@ export async function inviteUser(_prev: unknown, formData: FormData) {
   );
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const redirectTo = `${site}/auth/callback`;
 
-  // Generate an account-setup link to show in the dashboard. New email -> an
-  // "invite" link (also creates the user); existing email -> a "recovery" link.
-  let type: "invite" | "recovery" = "invite";
-  let gen = await admin.auth.admin.generateLink({ type: "invite", email });
-  if (gen.error) {
-    const msg = gen.error.message.toLowerCase();
+  // Send the email (via Supabase's configured SMTP). New email -> invite email
+  // (also creates the user); existing -> password-recovery email.
+  let reused = false;
+  let userId: string | undefined;
+  let emailed = true;
+
+  const inv = await admin.auth.admin.inviteUserByEmail(email, { redirectTo });
+  if (inv.error) {
+    const msg = inv.error.message.toLowerCase();
     const exists =
       msg.includes("already") ||
       msg.includes("registered") ||
       msg.includes("exists");
-    if (!exists) return { error: gen.error.message };
-    type = "recovery";
-    gen = await admin.auth.admin.generateLink({ type: "recovery", email });
-    if (gen.error) return { error: gen.error.message };
+    if (!exists) return { error: inv.error.message };
+    reused = true;
+    const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    userId = list?.users.find((u) => u.email === email)?.id;
+    const anon = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+    const rec = await anon.auth.resetPasswordForEmail(email, { redirectTo });
+    if (rec.error) emailed = false;
+  } else {
+    userId = inv.data.user?.id;
   }
 
-  const userId = gen.data.user?.id;
   if (userId) {
-    // Upsert (not update) so a profile is guaranteed even if one is missing.
+    // Upsert so a profile is guaranteed even if one is missing.
     await admin
       .from("profiles")
       .upsert({ id: userId, email, role }, { onConflict: "id" });
   }
 
-  const token = gen.data.properties?.hashed_token;
-  if (!token) return { error: "Could not generate a setup link." };
-
-  const setupLink = `${site}/auth/confirm?token_hash=${token}&type=${type}&next=${encodeURIComponent(
-    "/auth/set-password",
-  )}`;
+  // Always also produce a copyable setup link (works even if email delivery
+  // isn't configured yet). Uses a fresh recovery token via /auth/confirm.
+  let setupLink: string | null = null;
+  const gen = await admin.auth.admin.generateLink({ type: "recovery", email });
+  const token = gen.data?.properties?.hashed_token;
+  if (token) {
+    setupLink = `${site}/auth/confirm?token_hash=${token}&type=recovery&next=${encodeURIComponent(
+      "/auth/set-password",
+    )}`;
+  }
 
   return {
     ok: true as const,
     email,
     role,
-    reused: type === "recovery",
+    reused,
+    emailed,
     setupLink,
   };
 }

@@ -5,6 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { listPlacements } from "@/lib/placements";
 import { Button } from "@/components/ui/button";
 import { PlacementsTable } from "./placements-table";
+import { ImportPlacementsButton } from "./import-placements-button";
 
 export default async function PlacementsPage() {
   const me = await requireProfile();
@@ -19,10 +20,13 @@ export default async function PlacementsPage() {
             Consultants placed on projects
           </p>
         </div>
-        <Button render={<Link href="/placements/new" />}>
-          <Plus />
-          Add placement
-        </Button>
+        <div className="flex items-center gap-2">
+          <ImportPlacementsButton />
+          <Button render={<Link href="/placements/new" />}>
+            <Plus />
+            Add placement
+          </Button>
+        </div>
       </div>
 
       <PlacementsTable placements={rows} isAdmin={me.role === "admin"} />

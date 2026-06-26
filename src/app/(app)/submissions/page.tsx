@@ -5,6 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { listSubmissions } from "@/lib/submissions";
 import { Button } from "@/components/ui/button";
 import { SubmissionsTable } from "./submissions-table";
+import { ImportSubmissionsButton } from "./import-submissions-button";
 
 export default async function SubmissionsPage() {
   const me = await requireProfile();
@@ -19,10 +20,13 @@ export default async function SubmissionsPage() {
             Candidates submitted to requirements
           </p>
         </div>
-        <Button render={<Link href="/submissions/new" />}>
-          <Plus />
-          New submission
-        </Button>
+        <div className="flex items-center gap-2">
+          <ImportSubmissionsButton />
+          <Button render={<Link href="/submissions/new" />}>
+            <Plus />
+            New submission
+          </Button>
+        </div>
       </div>
 
       <SubmissionsTable submissions={subs} isAdmin={me.role === "admin"} />

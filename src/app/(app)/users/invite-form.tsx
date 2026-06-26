@@ -9,7 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type SetupInfo = { email: string; setupLink: string; reused: boolean };
+type SetupInfo = {
+  email: string;
+  setupLink: string | null;
+  reused: boolean;
+  emailed: boolean;
+};
 
 export function InviteForm() {
   const [state, action, pending] = useActionState(inviteUser, null);
@@ -23,12 +28,13 @@ export function InviteForm() {
         email: state.email,
         setupLink: state.setupLink,
         reused: state.reused,
+        emailed: state.emailed,
       });
       setCopied(false);
       toast.success(
-        state.reused
-          ? `${state.email} already exists — new setup link generated`
-          : `Setup link generated for ${state.email}`,
+        state.emailed
+          ? `Invitation email sent to ${state.email}`
+          : `Email couldn't be sent — share the setup link below`,
       );
     } else if ("error" in state && state.error) {
       toast.error(state.error);
@@ -36,7 +42,7 @@ export function InviteForm() {
   }, [state]);
 
   async function copyLink() {
-    if (!setup) return;
+    if (!setup?.setupLink) return;
     await navigator.clipboard.writeText(setup.setupLink);
     setCopied(true);
     toast.success("Setup link copied");
@@ -73,41 +79,52 @@ export function InviteForm() {
           {pending ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              Generating…
+              Sending…
             </>
           ) : (
             <>
               <UserPlus />
-              Generate setup link
+              Send invite
             </>
           )}
         </Button>
       </form>
+      <p className="text-xs text-muted-foreground">
+        Invites are limited to <span className="font-medium">@personaon.com</span>{" "}
+        and <span className="font-medium">@opelsoft.com</span> addresses.
+      </p>
 
       {setup && (
         <div className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3">
-          <p className="text-sm font-medium">Setup link for {setup.email}</p>
-          <p className="text-xs text-muted-foreground">
-            Share this with them. Opening it lets them set a password and finish
-            creating their account.
+          <p className="text-sm font-medium">
+            {setup.emailed
+              ? `Invitation email sent to ${setup.email}`
+              : `Setup link for ${setup.email}`}
           </p>
-          <div className="flex items-center gap-2">
-            <Input
-              readOnly
-              value={setup.setupLink}
-              className="font-mono text-xs"
-              onFocus={(e) => e.currentTarget.select()}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={copyLink}
-              aria-label="Copy setup link"
-            >
-              {copied ? <Check /> : <Copy />}
-            </Button>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            {setup.emailed
+              ? "They'll get an email to set a password. Or share this backup link directly:"
+              : "Email delivery isn't set up yet — share this link so they can set a password:"}
+          </p>
+          {setup.setupLink && (
+            <div className="flex items-center gap-2">
+              <Input
+                readOnly
+                value={setup.setupLink}
+                className="font-mono text-xs"
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={copyLink}
+                aria-label="Copy setup link"
+              >
+                {copied ? <Check /> : <Copy />}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

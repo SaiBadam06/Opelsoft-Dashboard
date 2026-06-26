@@ -29,7 +29,6 @@ function buildPayload(formData: FormData) {
     rate: num(formData, "rate"),
     visa: str(formData, "visa"),
     relocation: str(formData, "relocation"),
-    petitioner: str(formData, "petitioner"),
     availability: str(formData, "availability"),
     linkedin: str(formData, "linkedin"),
     github: str(formData, "github"),

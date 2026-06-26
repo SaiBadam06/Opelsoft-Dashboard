@@ -138,14 +138,7 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
               defaultValue={candidate?.relocation ?? ""}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="petitioner">Petitioner</Label>
-            <Input
-              id="petitioner"
-              name="petitioner"
-              defaultValue={candidate?.petitioner ?? ""}
-            />
-          </div>
+
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="availability">Availability</Label>
             <Input
