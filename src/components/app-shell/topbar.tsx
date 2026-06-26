@@ -83,15 +83,15 @@ export function Topbar({ profile }: { profile: Profile }) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => {
-                void signOut();
-              }}
-            >
-              <LogOut />
-              Sign out
-            </DropdownMenuItem>
+            <form action={signOut} className="w-full">
+              <DropdownMenuItem
+                variant="destructive"
+                render={<button type="submit" className="w-full" />}
+              >
+                <LogOut />
+                Sign out
+              </DropdownMenuItem>
+            </form>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
