@@ -45,16 +45,16 @@ export default function LoginPage() {
       {/* Brand panel — desktop only */}
       <aside
         data-animate="brand"
-        className="relative hidden overflow-hidden bg-gradient-to-br from-primary via-primary/85 to-info p-12 lg:flex lg:flex-col lg:justify-between"
+        className="relative hidden overflow-hidden bg-gradient-to-br from-primary to-info p-12 lg:flex lg:flex-col lg:justify-between"
       >
-        {/* Decorative blurred orbs */}
+        {/* Decorative blurred orbs (kept away from the logo so it stays legible) */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-24 -left-16 size-80 rounded-full bg-white/10 blur-3xl"
+          className="pointer-events-none absolute -right-20 top-1/3 size-96 rounded-full bg-white/10 blur-3xl"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-20 bottom-0 size-96 rounded-full bg-white/10 blur-3xl"
+          className="pointer-events-none absolute -bottom-24 -left-10 size-80 rounded-full bg-black/10 blur-3xl"
         />
 
         <div className="relative">

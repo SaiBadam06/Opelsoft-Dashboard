@@ -59,10 +59,10 @@ export function AppSidebar({ role }: { role: Role }) {
           <Image
             src="/logo.svg"
             alt="OpelSoft"
-            width={120}
-            height={28}
+            width={150}
+            height={36}
             priority
-            className="h-7 w-auto"
+            className="h-9 w-auto"
           />
         </Link>
       </SidebarHeader>
@@ -78,8 +78,10 @@ export function AppSidebar({ role }: { role: Role }) {
               return (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
+                    size="lg"
                     isActive={isActive}
                     tooltip={item.label}
+                    className="gap-3 text-[0.95rem] [&_svg]:size-5"
                     render={<Link href={item.href} />}
                   >
                     {Icon ? <Icon /> : null}

@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { requireProfile } from "@/lib/auth";
 import { AppSidebar } from "@/components/app-shell/sidebar";
 import { Topbar } from "@/components/app-shell/topbar";
@@ -10,7 +11,9 @@ export default async function AppLayout({
 }) {
   const profile = await requireProfile();
   return (
-    <SidebarProvider>
+    <SidebarProvider
+      style={{ "--sidebar-width": "17.5rem" } as CSSProperties}
+    >
       <AppSidebar role={profile.role} />
       <SidebarInset>
         <Topbar profile={profile} />

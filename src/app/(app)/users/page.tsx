@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { InviteForm } from "./invite-form";
+import { UserRowActions } from "./user-row-actions";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -43,7 +44,7 @@ function formatDate(value: string | null): string {
 }
 
 export default async function UsersPage() {
-  await requireAdmin();
+  const me = await requireAdmin();
 
   const supabase = await createClient();
   const { data: profiles } = await supabase
@@ -102,6 +103,7 @@ export default async function UsersPage() {
                 <th className="font-medium">Role</th>
                 <th className="font-medium">Status</th>
                 <th className="font-medium">Last sign-in</th>
+                <th className="w-10 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -115,6 +117,14 @@ export default async function UsersPage() {
                   </td>
                   <td className="text-muted-foreground">
                     {formatDate(u.lastSignInAt)}
+                  </td>
+                  <td className="text-right">
+                    <UserRowActions
+                      userId={u.id}
+                      email={u.email}
+                      role={u.role}
+                      isSelf={u.id === me.id}
+                    />
                   </td>
                 </tr>
               ))}
