@@ -31,13 +31,17 @@ generic full-time-recruiting template.
   with the client's vendor; Layer = behind another sub-vendor).
 
 > **Model amendment (2026-06-26):** There are only **two managed parties —
-> Vendors and Candidates.** **Vendors provide the jobs** (they send the
-> requirements); **Candidates are the people seeking jobs** (our bench talent).
-> **There is no Client entity.** The end-client company name (e.g. Wipro/UHG,
-> DTRA) is kept only as an optional free-text field on requirements /
-> submissions / placements for reference — not a first-class table or nav item.
-> "Consultant" and "Candidate" mean the same thing; the UI uses **Candidate**.
-> This overrides any "Client" references below.
+> Vendors and Candidates.** **Vendors (and external recruiters) provide the
+> jobs** (they send the requirements and are willing to hire); **Candidates are
+> the people being placed into those jobs** (the bench talent).
+> **There is no Client entity** — the end-client company name (e.g. Wipro/UHG,
+> DTRA) is only an optional free-text field on requirements / submissions /
+> placements, not a first-class table or nav item.
+> **Terminology:** "**Consultant**" refers to **OpelSoft itself** (us, the
+> staffing/consulting company) — it is NOT a name for the talent. The people are
+> always called **Candidates**, never Consultants. This overrides every
+> "Consultant" / "Client" reference elsewhere in this doc (read "Consultant" =
+> "Candidate" wherever it describes the talent/people tables).
 
 ## 3. Decisions (locked)
 
