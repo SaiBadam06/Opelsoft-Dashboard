@@ -25,6 +25,7 @@ import {
   setSubmissionStatus,
 } from "@/app/(app)/submissions/actions";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -108,13 +109,13 @@ function SubmissionStatusSelect({
         disabled={pending}
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring",
+          "inline-flex w-32 items-center justify-between gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring",
           submissionStatusBadgeClass(value),
           pending && "opacity-60",
         )}
       >
-        {submissionStatusLabel(value)}
-        <ChevronDown className="size-3 opacity-80" />
+        <span className="truncate">{submissionStatusLabel(value)}</span>
+        <ChevronDown className="size-3 shrink-0 opacity-80" />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
@@ -291,7 +292,7 @@ export function SubmissionsTable({
               filtered.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
-                    {new Date(s.submitted_date).toLocaleDateString()}
+                    {formatDate(s.submitted_date)}
                   </TableCell>
                   <TableCell className="font-medium">
                     {s.candidate_name ?? DASH}

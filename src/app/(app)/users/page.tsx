@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/auth";
+import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { InviteForm } from "./invite-form";
@@ -32,15 +33,6 @@ function StatusBadge({ status }: { status: UserStatus }) {
       Disabled
     </Badge>
   );
-}
-
-function formatDate(value: string | null): string {
-  if (!value) return "—";
-  return new Date(value).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 export default async function UsersPage() {

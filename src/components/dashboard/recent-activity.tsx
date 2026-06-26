@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import type { ActivityItem } from "@/lib/dashboard";
 import {
   Card,
@@ -54,7 +55,7 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
                   </span>
                 </div>
                 <span className="shrink-0 text-xs text-muted-foreground">
-                  {new Date(item.at).toLocaleDateString()}
+                  {formatDate(item.at)}
                 </span>
               </div>
             );

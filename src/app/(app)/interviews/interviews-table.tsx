@@ -24,6 +24,7 @@ import {
   setInterviewResult,
 } from "@/app/(app)/interviews/actions";
 import { cn } from "@/lib/utils";
+import { formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -285,9 +286,7 @@ export function InterviewsTable({
               filtered.map((i) => (
                 <TableRow key={i.id}>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
-                    {i.interview_date
-                      ? new Date(i.interview_date).toLocaleString()
-                      : DASH}
+                    {formatDateTime(i.interview_date)}
                   </TableCell>
                   <TableCell className="font-medium">
                     {i.candidate_name ?? DASH}

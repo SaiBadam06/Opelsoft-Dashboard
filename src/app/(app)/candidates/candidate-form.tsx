@@ -203,6 +203,30 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
               defaultValue={candidate?.preferred_location ?? ""}
             />
           </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="linkedin">LinkedIn</Label>
+            <Input
+              id="linkedin"
+              name="linkedin"
+              defaultValue={candidate?.linkedin ?? ""}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="github">GitHub</Label>
+            <Input
+              id="github"
+              name="github"
+              defaultValue={candidate?.github ?? ""}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="portfolio">Portfolio</Label>
+            <Input
+              id="portfolio"
+              name="portfolio"
+              defaultValue={candidate?.portfolio ?? ""}
+            />
+          </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="projects">Projects</Label>
             <Textarea

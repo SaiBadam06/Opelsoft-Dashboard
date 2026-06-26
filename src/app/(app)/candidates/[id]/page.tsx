@@ -13,6 +13,7 @@ import {
   statusBadgeClass,
   stageLabel,
 } from "@/lib/candidate-constants";
+import { formatDateTime } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -245,10 +246,10 @@ export default async function Page({
             <CardContent className="flex flex-col gap-4">
               <Grid>
                 <Field label="Created">
-                  {new Date(c.created_at).toLocaleString()}
+                  {formatDateTime(c.created_at)}
                 </Field>
                 <Field label="Updated">
-                  {new Date(c.updated_at).toLocaleString()}
+                  {formatDateTime(c.updated_at)}
                 </Field>
               </Grid>
               <p className="text-sm text-muted-foreground">

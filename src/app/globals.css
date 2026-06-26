@@ -151,15 +151,43 @@
   }
 }
 
-@keyframes brand-loader-slide {
+/* Material-style indeterminate progress bar */
+@keyframes brand-indeterminate {
   0% {
-    transform: translateX(-110%);
+    left: -45%;
+    width: 45%;
+  }
+  60% {
+    left: 55%;
+    width: 55%;
   }
   100% {
-    transform: translateX(320%);
+    left: 105%;
+    width: 45%;
   }
 }
 
 .brand-loader-bar {
-  animation: brand-loader-slide 1.1s ease-in-out infinite;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 9999px;
+  animation: brand-indeterminate 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: left, width;
+}
+
+@keyframes brand-float {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-4px);
+    opacity: 0.85;
+  }
+}
+
+.brand-loader-logo {
+  animation: brand-float 1.8s ease-in-out infinite;
 }

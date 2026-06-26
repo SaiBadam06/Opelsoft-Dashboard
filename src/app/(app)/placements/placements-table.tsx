@@ -24,6 +24,7 @@ import {
   setPlacementStatus,
 } from "@/app/(app)/placements/actions";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -297,9 +298,7 @@ export function PlacementsTable({
                     {p.rate != null ? `$${p.rate}/hr` : DASH}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
-                    {p.placement_date
-                      ? new Date(p.placement_date).toLocaleDateString()
-                      : DASH}
+                    {formatDate(p.placement_date)}
                   </TableCell>
                   <TableCell>{p.in_out ?? DASH}</TableCell>
                   <TableCell>

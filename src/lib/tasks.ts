@@ -34,7 +34,8 @@ export async function listTasks(): Promise<TaskRow[]> {
     .select(
       `${COLUMNS}, candidates(full_name), profiles!tasks_assigned_to_fkey(full_name, email)`,
     )
-    .order("status", { ascending: true })
+    // 'pending' sorts before 'done' (descending puts pending first)
+    .order("status", { ascending: false })
     .order("due_date", { ascending: true, nullsFirst: false });
   return ((data as unknown as Joined[] | null) ?? []).map((t) => ({
     ...t,

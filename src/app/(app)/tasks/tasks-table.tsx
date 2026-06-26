@@ -22,6 +22,7 @@ import {
 } from "@/lib/work-constants";
 import { deleteTask, setTaskStatus } from "@/app/(app)/tasks/actions";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -278,9 +279,7 @@ export function TasksTable({
                   <TableCell>{t.candidate_name ?? DASH}</TableCell>
                   <TableCell>{t.assignee_name ?? DASH}</TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
-                    {t.due_date
-                      ? new Date(t.due_date).toLocaleDateString()
-                      : DASH}
+                    {formatDate(t.due_date)}
                   </TableCell>
                   <TableCell>
                     <TaskStatusSelect id={t.id} status={t.status} />
