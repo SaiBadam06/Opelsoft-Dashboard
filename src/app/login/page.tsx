@@ -1,11 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import { useActionState } from "react";
 import { signIn } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(signIn, null);
@@ -13,8 +14,16 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted p-4">
       <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-xl">OpelSoft Dashboard</CardTitle>
+        <CardHeader className="items-center">
+          <Image
+            src="/logo.svg"
+            alt="OpelSoft"
+            width={170}
+            height={46}
+            className="h-10 w-auto"
+            priority
+          />
+          <p className="text-sm text-muted-foreground">Staffing Dashboard</p>
         </CardHeader>
         <CardContent>
           <form action={action} className="space-y-4">
