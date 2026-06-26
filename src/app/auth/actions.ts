@@ -20,6 +20,29 @@ export async function signOut() {
   redirect("/login");
 }
 
+export async function setPassword(_prev: unknown, formData: FormData) {
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+  if (password.length < 8) {
+    return { error: "Password must be at least 8 characters." };
+  }
+  if (password !== confirm) {
+    return { error: "Passwords do not match." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Your link has expired. Ask an admin to re-invite you." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: error.message };
+  redirect("/dashboard");
+}
+
 export async function inviteUser(_prev: unknown, formData: FormData) {
   const me = await getCurrentProfile();
   if (me?.role !== "admin") return { error: "Not authorized" };
