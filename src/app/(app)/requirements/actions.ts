@@ -90,6 +90,23 @@ export async function setRequirementStatus(
   return { ok: true as const };
 }
 
+export async function setRequirementPriority(
+  id: string,
+  priority: RequirementPriority,
+) {
+  const me = await getCurrentProfile();
+  if (!me) return { error: "Not authorized" };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("requirements")
+    .update({ priority })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/requirements");
+  revalidatePath(`/requirements/${id}`);
+  return { ok: true as const };
+}
+
 export async function deleteRequirement(id: string) {
   const me = await getCurrentProfile();
   if (me?.role !== "admin") return { error: "Only admins can delete." };

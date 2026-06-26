@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -46,9 +45,6 @@ const ICON_MAP: Record<string, LucideIcon> = {
 
 export function AppSidebar({ role }: { role: Role }) {
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   const items = NAV_ITEMS.filter((item) => canAccess(role, item.minRole));
 
   return (
@@ -85,9 +81,8 @@ export function AppSidebar({ role }: { role: Role }) {
             {items.map((item) => {
               const Icon = ICON_MAP[item.href];
               const isActive =
-                mounted &&
-                (pathname === item.href ||
-                  pathname.startsWith(`${item.href}/`));
+                pathname === item.href ||
+                pathname.startsWith(`${item.href}/`);
               return (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton

@@ -1,13 +1,19 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
-import { listCandidates } from "@/lib/candidates";
+import { listCandidates, listCoordinators } from "@/lib/candidates";
+import { requireProfile } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { CandidatesTable } from "./candidates-table";
 import { ImportCandidatesButton } from "./import-candidates-button";
 
 export default async function CandidatesPage() {
-  const candidates = await listCandidates();
+  const me = await requireProfile();
+  const isAdmin = me.role === "admin";
+  const [candidates, coordinators] = await Promise.all([
+    listCandidates(),
+    isAdmin ? listCoordinators() : Promise.resolve([]),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -25,7 +31,11 @@ export default async function CandidatesPage() {
         </div>
       </div>
 
-      <CandidatesTable candidates={candidates} />
+      <CandidatesTable
+        candidates={candidates}
+        coordinators={coordinators}
+        isAdmin={isAdmin}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -104,13 +104,15 @@ function Column({
 export function PipelineBoard({ candidates }: { candidates: Candidate[] }) {
   const [items, setItems] = useState<Candidate[]>(candidates);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const prevItems = useRef<Candidate[]>(candidates);
+  const [synced, setSynced] = useState<Candidate[]>(candidates);
 
   // Re-sync when the server sends fresh data (e.g. after adding/editing a
-  // candidate elsewhere), so the board always reflects the full current set.
-  useEffect(() => {
+  // candidate elsewhere). Adjusting state during render when a prop changes is
+  // the React-blessed pattern — no effect, no extra render pass.
+  if (synced !== candidates) {
+    setSynced(candidates);
     setItems(candidates);
-  }, [candidates]);
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -135,7 +137,6 @@ export function PipelineBoard({ candidates }: { candidates: Candidate[] }) {
     if (!candidate || candidate.pipeline_stage === newStage) return;
 
     const snapshot = items;
-    prevItems.current = snapshot;
     setItems((cur) =>
       cur.map((c) =>
         c.id === id ? { ...c, pipeline_stage: newStage } : c,

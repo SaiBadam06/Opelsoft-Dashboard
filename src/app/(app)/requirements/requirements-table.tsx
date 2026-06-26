@@ -8,14 +8,20 @@ import { toast } from "sonner";
 import type { RequirementWithVendor } from "@/lib/requirements";
 import {
   REQUIREMENT_STATUSES,
+  REQUIREMENT_PRIORITIES,
   requirementStatusBadgeClass,
   requirementStatusLabel,
   requirementPriorityLabel,
   priorityBadgeClass,
   type RequirementStatus,
+  type RequirementPriority,
 } from "@/lib/job-constants";
 import { cn } from "@/lib/utils";
-import { setRequirementStatus, deleteRequirement } from "./actions";
+import {
+  setRequirementStatus,
+  setRequirementPriority,
+  deleteRequirement,
+} from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -134,6 +140,72 @@ function RequirementStatusSelect({
   );
 }
 
+// Inline priority editor for the requirements table.
+function RequirementPrioritySelect({
+  id,
+  priority,
+}: {
+  id: string;
+  priority: RequirementPriority;
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState<RequirementPriority>(priority);
+  const [pending, startTransition] = useTransition();
+
+  function choose(next: RequirementPriority) {
+    if (next === value) return;
+    const prev = value;
+    setValue(next);
+    startTransition(async () => {
+      const res = await setRequirementPriority(id, next);
+      if (res && "error" in res) {
+        toast.error(res.error);
+        setValue(prev);
+        return;
+      }
+      toast.success("Priority updated");
+      router.refresh();
+    });
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        disabled={pending}
+        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          "inline-flex w-28 items-center justify-between gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring",
+          priorityBadgeClass(value),
+          pending && "opacity-60",
+        )}
+      >
+        <span className="truncate">{requirementPriorityLabel(value)}</span>
+        <ChevronDown className="size-3 shrink-0 opacity-80" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        className="w-40"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <DropdownMenuGroup>
+          {REQUIREMENT_PRIORITIES.map((o) => (
+            <DropdownMenuItem
+              key={o.value}
+              onClick={() => choose(o.value)}
+              className="gap-2"
+            >
+              <span className="flex-1">{o.label}</span>
+              {o.value === value ? (
+                <Check className="size-3.5 text-muted-foreground" />
+              ) : null}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function matches(r: RequirementWithVendor, q: string): boolean {
   const haystack = [r.title, r.skills, r.location, r.vendor_name]
     .filter(Boolean)
@@ -237,10 +309,8 @@ export function RequirementsTable({
                   <TableCell>
                     {r.rate != null ? `$${r.rate}/hr` : "—"}
                   </TableCell>
-                  <TableCell>
-                    <Badge className={priorityBadgeClass(r.priority)}>
-                      {requirementPriorityLabel(r.priority)}
-                    </Badge>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <RequirementPrioritySelect id={r.id} priority={r.priority} />
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <RequirementStatusSelect id={r.id} status={r.status} />

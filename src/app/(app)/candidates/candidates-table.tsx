@@ -1,15 +1,25 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Users } from "lucide-react";
+import { Check, ChevronDown, Search, Users } from "lucide-react";
+import { toast } from "sonner";
 
-import type { Candidate } from "@/lib/candidates";
+import type { Candidate, CoordinatorOption } from "@/lib/candidates";
 import { stageLabel } from "@/lib/candidate-constants";
+import { cn } from "@/lib/utils";
+import { reassignCandidate } from "./actions";
 import { StatusSelect } from "./status-select";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -18,6 +28,76 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+// Inline coordinator reassignment for the candidates table (admins only).
+function CoordinatorSelect({
+  candidateId,
+  current,
+  coordinators,
+}: {
+  candidateId: string;
+  current: string;
+  coordinators: CoordinatorOption[];
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState<string | null>(current || null);
+  const [pending, startTransition] = useTransition();
+
+  const label =
+    coordinators.find((c) => c.id === value)?.name ?? "Unassigned";
+
+  function choose(next: string) {
+    if (next === value) return;
+    const prev = value;
+    setValue(next);
+    startTransition(async () => {
+      const res = await reassignCandidate(candidateId, next);
+      if (res && "error" in res) {
+        toast.error(res.error);
+        setValue(prev);
+        return;
+      }
+      toast.success("Reassigned");
+      router.refresh();
+    });
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        disabled={pending}
+        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          "inline-flex w-40 items-center justify-between gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring",
+          pending && "opacity-60",
+        )}
+      >
+        <span className="truncate">{label}</span>
+        <ChevronDown className="size-3 shrink-0 opacity-80" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        className="max-h-72 w-48 overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <DropdownMenuGroup>
+          {coordinators.map((c) => (
+            <DropdownMenuItem
+              key={c.id}
+              onClick={() => choose(c.id)}
+              className="gap-2"
+            >
+              <span className="flex-1 truncate">{c.name}</span>
+              {c.id === value ? (
+                <Check className="size-3.5 text-muted-foreground" />
+              ) : null}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 function matches(c: Candidate, q: string): boolean {
   const haystack = [
@@ -32,7 +112,15 @@ function matches(c: Candidate, q: string): boolean {
   return haystack.includes(q);
 }
 
-export function CandidatesTable({ candidates }: { candidates: Candidate[] }) {
+export function CandidatesTable({
+  candidates,
+  coordinators,
+  isAdmin,
+}: {
+  candidates: Candidate[];
+  coordinators: CoordinatorOption[];
+  isAdmin: boolean;
+}) {
   const router = useRouter();
   const [query, setQuery] = useState("");
 
@@ -122,8 +210,23 @@ export function CandidatesTable({ candidates }: { candidates: Candidate[] }) {
                     </div>
                   </TableCell>
                   <TableCell>{c.location ?? "—"}</TableCell>
-                  <TableCell className="text-muted-foreground whitespace-nowrap">
-                    {c.coordinator?.full_name ?? c.coordinator?.email ?? "—"}
+                  <TableCell
+                    className="whitespace-nowrap"
+                    onClick={isAdmin ? (e) => e.stopPropagation() : undefined}
+                  >
+                    {isAdmin ? (
+                      <CoordinatorSelect
+                        candidateId={c.id}
+                        current={c.assigned_coordinator_id ?? ""}
+                        coordinators={coordinators}
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">
+                        {c.coordinator?.full_name ??
+                          c.coordinator?.email ??
+                          "—"}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <StatusSelect id={c.id} status={c.status} />

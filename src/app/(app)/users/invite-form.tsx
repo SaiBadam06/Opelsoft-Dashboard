@@ -18,19 +18,24 @@ type SetupInfo = {
 
 export function InviteForm() {
   const [state, action, pending] = useActionState(inviteUser, null);
-  const [setup, setSetup] = useState<SetupInfo | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Derived from the action result — no need to mirror it into state.
+  const setup: SetupInfo | null =
+    state && "ok" in state && state.ok
+      ? {
+          email: state.email,
+          setupLink: state.setupLink,
+          reused: state.reused,
+          emailed: state.emailed,
+        }
+      : null;
+
+  // Toast is an external side effect (allowed in an effect); it fires once per
+  // new action result.
   useEffect(() => {
     if (!state) return;
     if ("ok" in state && state.ok) {
-      setSetup({
-        email: state.email,
-        setupLink: state.setupLink,
-        reused: state.reused,
-        emailed: state.emailed,
-      });
-      setCopied(false);
       toast.success(
         state.emailed
           ? `Invitation email sent to ${state.email}`

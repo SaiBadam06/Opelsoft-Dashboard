@@ -19,22 +19,29 @@ export default function LoginPage() {
     () => {
       const mm = gsap.matchMedia();
 
+      // fromTo (not from) + clearProps so an interrupted/replayed tween — e.g.
+      // React StrictMode's double-mount in dev — can never leave an element
+      // stuck at opacity:0 and hide the form/button.
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.from("[data-animate='brand']", {
-          opacity: 0,
-          scale: 1.04,
-          duration: 0.6,
-          ease: "power2.out",
-        });
+        gsap.fromTo(
+          "[data-animate='brand']",
+          { opacity: 0, scale: 1.04 },
+          { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out", clearProps: "opacity,transform" },
+        );
 
-        gsap.from("[data-animate='stagger']", {
-          opacity: 0,
-          y: 12,
-          duration: 0.5,
-          ease: "power2.out",
-          stagger: 0.08,
-          delay: 0.1,
-        });
+        gsap.fromTo(
+          "[data-animate='stagger']",
+          { opacity: 0, y: 12 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.5,
+            ease: "power2.out",
+            stagger: 0.08,
+            delay: 0.1,
+            clearProps: "opacity,transform",
+          },
+        );
       });
     },
     { scope: root }
@@ -58,13 +65,13 @@ export default function LoginPage() {
         />
 
         <div className="relative">
-          <div className="inline-flex rounded-xl bg-white/10 px-4 py-3 backdrop-blur-sm ring-1 ring-white/20">
+          <div className="inline-flex rounded-xl bg-white px-4 py-3 shadow-lg ring-1 ring-white/30">
             <Image
               src="/logo.svg"
               alt="OpelSoft"
               width={170}
               height={46}
-              className="h-9 w-auto brightness-0 invert"
+              className="h-9 w-auto"
               priority
             />
           </div>
