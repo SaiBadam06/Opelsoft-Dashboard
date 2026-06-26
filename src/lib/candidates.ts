@@ -58,6 +58,21 @@ export async function getCandidate(id: string): Promise<Candidate | null> {
   return (data as Candidate | null) ?? null;
 }
 
+// Lightweight {id, full_name} list for select inputs (RLS-scoped).
+export async function candidateOptions(): Promise<
+  { id: string; full_name: string }[]
+> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("candidates")
+    .select("id, full_name")
+    .order("full_name", { ascending: true });
+  return (data ?? []).map((c) => ({
+    id: c.id as string,
+    full_name: c.full_name as string,
+  }));
+}
+
 export interface CoordinatorOption {
   id: string;
   name: string;
