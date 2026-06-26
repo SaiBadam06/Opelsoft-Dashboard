@@ -42,7 +42,9 @@ function buildPayload(formData: FormData) {
     preferred_location: str(formData, "preferred_location"),
     status: (str(formData, "status") ?? "available") as CandidateStatus,
     pipeline_stage: (str(formData, "pipeline_stage") ?? "new") as PipelineStage,
-    visa_transfer: formData.get("visa_transfer") === "on",
+    visa_transfer: ["on", "true", "1"].includes(
+      String(formData.get("visa_transfer") ?? "").toLowerCase(),
+    ),
     notes: str(formData, "notes"),
   };
 }
