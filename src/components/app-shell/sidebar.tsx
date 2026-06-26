@@ -81,11 +81,11 @@ export function AppSidebar({ role }: { role: Role }) {
                     size="lg"
                     isActive={isActive}
                     tooltip={item.label}
-                    className="gap-3 text-[0.95rem] [&_svg]:size-5"
+                    className="h-11 gap-3 text-sm font-medium [&>svg]:size-[1.15rem] [&>svg]:shrink-0"
                     render={<Link href={item.href} />}
                   >
-                    {Icon ? <Icon /> : null}
-                    <span>{item.label}</span>
+                    {Icon ? <Icon strokeWidth={2} /> : null}
+                    <span className="truncate">{item.label}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );
