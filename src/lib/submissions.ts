@@ -40,7 +40,7 @@ export async function listSubmissions(): Promise<SubmissionRow[]> {
       `${COLUMNS}, candidates(full_name), requirements(title), vendors(name)`,
     )
     .order("submitted_date", { ascending: false });
-  return ((data as Joined[] | null) ?? []).map((s) => ({
+  return ((data as unknown as Joined[] | null) ?? []).map((s) => ({
     ...s,
     candidate_name: s.candidates?.full_name ?? null,
     requirement_title: s.requirements?.title ?? null,

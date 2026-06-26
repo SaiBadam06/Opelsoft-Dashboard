@@ -36,10 +36,11 @@ export async function listRequirements(): Promise<RequirementWithVendor[]> {
     .from("requirements")
     .select(`${COLUMNS}, vendors(name)`)
     .order("updated_at", { ascending: false });
-  return (
-    (data as (Requirement & { vendors: { name: string } | null })[] | null) ??
-    []
-  ).map((r) => ({ ...r, vendor_name: r.vendors?.name ?? null }));
+  const rows =
+    (data as unknown as
+      | (Requirement & { vendors: { name: string } | null })[]
+      | null) ?? [];
+  return rows.map((r) => ({ ...r, vendor_name: r.vendors?.name ?? null }));
 }
 
 export async function getRequirement(
@@ -52,7 +53,9 @@ export async function getRequirement(
     .eq("id", id)
     .single();
   if (!data) return null;
-  const r = data as Requirement & { vendors: { name: string } | null };
+  const r = data as unknown as Requirement & {
+    vendors: { name: string } | null;
+  };
   return { ...r, vendor_name: r.vendors?.name ?? null };
 }
 
