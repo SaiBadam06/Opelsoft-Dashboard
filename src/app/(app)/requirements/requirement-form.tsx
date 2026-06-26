@@ -202,7 +202,7 @@ export function RequirementForm({
             </select>
           </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">JD</Label>
             <Textarea
               id="notes"
               name="notes"

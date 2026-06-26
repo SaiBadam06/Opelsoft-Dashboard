@@ -139,10 +139,10 @@ export default async function Page({
         </CardContent>
       </Card>
 
-      {/* Notes */}
+      {/* JD */}
       <Card>
         <CardHeader>
-          <CardTitle>Notes</CardTitle>
+          <CardTitle>JD</CardTitle>
         </CardHeader>
         <CardContent>
           <LongText value={r.notes} />

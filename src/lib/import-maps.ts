@@ -71,6 +71,28 @@ export const CANDIDATE_ALIASES: Record<string, string> = {
   availability: "availability",
 };
 
+export const VENDOR_ALIASES: Record<string, string> = {
+  name: "name",
+  vendorname: "name",
+  company: "name",
+  companyname: "name",
+  vendor: "name",
+  contactname: "contact_name",
+  contact: "contact_name",
+  contactperson: "contact_name",
+  poc: "contact_name",
+  emailid: "email",
+  email: "email",
+  mail: "email",
+  phone: "phone",
+  contactnumber: "phone",
+  mobile: "phone",
+  phonenumber: "phone",
+  comments: "notes",
+  notes: "notes",
+  remarks: "notes",
+};
+
 export const PLACEMENT_ALIASES: Record<string, string> = {
   consultantname: "candidate",
   consultant: "candidate",
