@@ -3,6 +3,36 @@
 
 export type RawRow = Record<string, unknown>;
 
+export type RowError = { row: number; field: string; issue: string };
+
+export function validateText(v: string | undefined, field: string, row: number): RowError | null {
+  if (!v) return null;
+  if (/^\d+(\.\d+)?$/.test(v.trim()))
+    return { row, field, issue: `"${v}" is a number — expected text` };
+  return null;
+}
+
+export function validateEmail(v: string | undefined, field: string, row: number): RowError | null {
+  if (!v) return null;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()))
+    return { row, field, issue: `"${v}" is not a valid email address` };
+  return null;
+}
+
+export function validateNumeric(v: string | undefined, field: string, row: number): RowError | null {
+  if (!v) return null;
+  if (parseNumber(v) === null)
+    return { row, field, issue: `"${v}" is not a valid number` };
+  return null;
+}
+
+export function validateDateField(v: string | undefined, field: string, row: number): RowError | null {
+  if (!v) return null;
+  if (parseDate(v) === null)
+    return { row, field, issue: `"${v}" is not a valid date` };
+  return null;
+}
+
 export function normHeader(h: string): string {
   return h.toLowerCase().replace(/[^a-z0-9]/g, "");
 }

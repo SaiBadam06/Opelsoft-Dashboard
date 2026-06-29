@@ -6,21 +6,65 @@ import { getCurrentProfile } from "@/lib/auth";
 import {
   mapRow,
   parseNumber,
+  validateText,
+  validateEmail,
+  validateNumeric,
   CANDIDATE_ALIASES,
   type RawRow,
+  type RowError,
 } from "@/lib/import-maps";
 
 export async function importCandidates(rows: RawRow[]) {
   const me = await getCurrentProfile();
   if (!me) return { error: "Not authorized" };
-  if (!Array.isArray(rows) || rows.length === 0) {
+  if (!Array.isArray(rows) || rows.length === 0)
     return { error: "No rows to import." };
+
+  // Validate every row first — collect all errors before touching the DB.
+  const rowErrors: RowError[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const m = mapRow(rows[i], CANDIDATE_ALIASES);
+    const rowNum = i + 2; // +2: 1-based + header row
+    if (!m.full_name) {
+      rowErrors.push({ row: rowNum, field: "Name", issue: "Required field is missing" });
+      continue;
+    }
+    const checks = [
+      validateText(m.full_name, "Name", rowNum),
+      validateEmail(m.email, "Email", rowNum),
+      validateNumeric(m.experience_years, "Experience", rowNum),
+      validateNumeric(m.rate, "Rate", rowNum),
+    ];
+    checks.forEach((e) => e && rowErrors.push(e));
   }
+  if (rowErrors.length > 0) return { error: "Validation failed", rowErrors };
+
+  // Duplicate detection: skip rows whose email OR name already exists.
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("candidates")
+    .select("full_name, email");
+  const existingEmails = new Set(
+    (existing ?? []).map((c) => c.email?.toLowerCase()).filter(Boolean),
+  );
+  const existingNames = new Set(
+    (existing ?? []).map((c) => c.full_name?.toLowerCase()),
+  );
 
   const records = [];
+  let duplicates = 0;
   for (const row of rows) {
     const m = mapRow(row, CANDIDATE_ALIASES);
     if (!m.full_name) continue;
+    const emailKey = m.email?.toLowerCase();
+    const nameKey = m.full_name.toLowerCase();
+    if (
+      (emailKey && existingEmails.has(emailKey)) ||
+      existingNames.has(nameKey)
+    ) {
+      duplicates++;
+      continue;
+    }
     records.push({
       full_name: m.full_name,
       email: m.email ?? null,
@@ -40,13 +84,9 @@ export async function importCandidates(rows: RawRow[]) {
     });
   }
 
-  if (records.length === 0) {
-    return {
-      error: "No valid rows — the sheet needs a 'Consultant Name' or 'Name' column.",
-    };
-  }
+  if (records.length === 0)
+    return { error: "No new rows — all entries already exist in the system.", rowErrors: [] };
 
-  const supabase = await createClient();
   const { error } = await supabase.from("candidates").insert(records);
   if (error) return { error: error.message };
   revalidatePath("/candidates");
@@ -54,6 +94,7 @@ export async function importCandidates(rows: RawRow[]) {
   return {
     ok: true as const,
     inserted: records.length,
-    skipped: rows.length - records.length,
+    skipped: rows.length - records.length - duplicates,
+    duplicates,
   };
 }
