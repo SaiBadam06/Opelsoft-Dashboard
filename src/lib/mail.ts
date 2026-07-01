@@ -13,12 +13,12 @@ let transport: nodemailer.Transporter | null = null;
 function getTransport() {
   if (!user || !pass) return null; // not configured -> mailer is a no-op
   if (!transport) {
-    transport = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465, // 587 uses STARTTLS
-      auth: { user, pass },
-    });
+    const isGmail = host === "smtp.gmail.com";
+    transport = nodemailer.createTransport(
+      isGmail
+        ? { service: "gmail", auth: { user, pass } }
+        : { host, port, secure: port === 465, auth: { user, pass } },
+    );
   }
   return transport;
 }
@@ -36,6 +36,7 @@ export async function sendMail(opts: {
   }
   try {
     await t.sendMail({ from, ...opts });
+    console.log("[mail] sent to", opts.to);
     return true;
   } catch (e) {
     console.error("[mail] send failed:", e);
