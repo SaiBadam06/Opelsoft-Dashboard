@@ -87,7 +87,7 @@ gcloud builds submit --config cloudbuild.yaml --substitutions=_IMAGE=REGION-dock
 ## 6. Deploy to Cloud Run
 
 ```sh
-gcloud run deploy opelsoft-dashboard --image REGION-docker.pkg.dev/PROJECT_ID/opelsoft/opelsoft-dashboard:latest --region REGION --allow-unauthenticated --port 8080 --memory 1Gi --max-instances 3 --set-env-vars "NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co,NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY,SMTP_USER=you@opelsoft.com,SMTP_FROM=you@opelsoft.com" --set-secrets "SUPABASE_SERVICE_ROLE_KEY=opelsoft-service-role:latest,SMTP_PASS=opelsoft-smtp-pass:latest"
+gcloud run deploy opelsoft-dashboard --image REGION-docker.pkg.dev/PROJECT_ID/opelsoft/opelsoft-dashboard:latest --region REGION --no-invoker-iam-check --port 8080 --memory 1Gi --max-instances 3 --set-env-vars "NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co,NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY,NEXT_PUBLIC_SITE_URL=https://YOUR-SERVICE-URL,SITE_URL=https://YOUR-SERVICE-URL,SMTP_USER=you@opelsoft.com,SMTP_FROM=you@opelsoft.com" --set-secrets "SUPABASE_SERVICE_ROLE_KEY=opelsoft-service-role:latest,SMTP_PASS=opelsoft-smtp-pass:latest"
 ```
 
 This prints a **Service URL** like `https://opelsoft-dashboard-xxxx.REGION.run.app`.
@@ -118,6 +118,12 @@ Cloud Run bills per request and CPU time. A low-traffic internal app is often **
 You can set `--min-instances 0` (default) so it scales to zero when idle.
 
 **Shut down the old GCE VM** after migrating to avoid paying for both.
+
+### Public access (org policy)
+
+If your GCP organization blocks `allUsers` IAM bindings, use `--no-invoker-iam-check`
+on deploy instead of `--allow-unauthenticated`. Without this, browsers get **403
+Forbidden** even though the container is healthy.
 
 ---
 

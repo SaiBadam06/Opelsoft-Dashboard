@@ -46,7 +46,7 @@ gcloud run deploy "${SERVICE_NAME}" \
   --project "${GCP_PROJECT_ID}" \
   --image "${IMAGE}" \
   --region "${GCP_REGION}" \
-  --allow-unauthenticated \
+  --no-invoker-iam-check \
   --port 8080 \
   --memory 1Gi \
   --max-instances 3 \
