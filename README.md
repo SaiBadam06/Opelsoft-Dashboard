@@ -26,12 +26,12 @@ If you ever reset the DB, the full sequence is:
 
 ## Contributing
 
-We use **one live environment** — no staging server. All changes go through pull
-requests with CI (lint, test, build) and review before merge. Only the designated
-deployer runs production deploy.
+We use **one live environment** (Cloud Run) — no staging server. Changes go through
+pull requests with CI (lint, test, build). Only the designated deployer runs production
+deploy.
 
-See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for branch rules, PR checklist, and
-deploy process.
+See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for branch rules and **[DEPLOY.md](./DEPLOY.md)**
+for Cloud Run setup.
 
 ## Useful scripts
 
@@ -39,3 +39,4 @@ deploy process.
 - `npm run build` / `npm start` — production build & run
 - `npm run test` — unit tests (Vitest)
 - `npm run seed` / `npm run seed:candidates` / `npm run seed:all` — seed data
+- `./scripts/deploy-cloudrun.sh` — production deploy (deployer only)

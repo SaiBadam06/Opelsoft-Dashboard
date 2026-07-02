@@ -11,7 +11,7 @@
 
 ## Checklist
 
-- [ ] I branched from `feat/phase1-foundation` (not committing directly to it)
+- [ ] I branched from `main` (not committing directly to it)
 - [ ] `npm run lint` passes locally
 - [ ] `npm run test` passes locally
 - [ ] `npm run build` passes locally
@@ -22,8 +22,8 @@
 
 ## Screenshots / notes
 
-<!-- Optional: UI screenshots, migration notes, test account used -->
+<!-- Optional -->
 
 ## Deployer notes
 
-<!-- Leave blank if N/A. e.g. "Run migration 0007 in Supabase SQL Editor after deploy" -->
+<!-- Leave blank if N/A -->
