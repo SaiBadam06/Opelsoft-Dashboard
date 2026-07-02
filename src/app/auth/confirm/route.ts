@@ -1,12 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
+import { siteUrlFromRequest } from "@/lib/site-url";
 
 // Handles invite / recovery / email-confirmation links that carry a token_hash.
 // Verifies the OTP, attaches the session cookies directly to the redirect
 // response (not via next/headers, which doesn't forward to NextResponse).
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  const origin = siteUrlFromRequest(request);
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const next = searchParams.get("next") ?? "/dashboard";

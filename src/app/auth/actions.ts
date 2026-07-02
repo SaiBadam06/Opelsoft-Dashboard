@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { getCurrentProfile } from "@/lib/auth";
+import { getSiteUrl } from "@/lib/site-url";
 import { sendMail } from "@/lib/mail";
 
 export async function signIn(_prev: unknown, formData: FormData) {
@@ -72,7 +73,7 @@ export async function inviteUser(_prev: unknown, formData: FormData) {
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
 
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const site = await getSiteUrl();
   const redirectTo = `${site}/auth/callback`;
 
   // Create the user silently (no Supabase email) or detect if they already exist.
