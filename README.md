@@ -16,13 +16,22 @@ admin (see `.env.local` → `SEED_ADMIN_*`).
 
 If you ever reset the DB, the full sequence is:
 
-1. Run migrations **0001 → 0002 → 0003 → 0004** in the Supabase SQL Editor
-   (files under `supabase/migrations/`).
+1. Run migrations **0001 → 0006** in the Supabase SQL Editor (files under
+   `supabase/migrations/`).
 2. `npm run seed` — creates the admin account.
 3. `npm run seed:all` — loads everything else (candidates, vendors, requirements,
    submissions, interviews, placements, tasks).
 
 (`npm run dev` also prints this sequence as a reminder.)
+
+## Contributing
+
+We use **one live environment** — no staging server. All changes go through pull
+requests with CI (lint, test, build) and review before merge. Only the designated
+deployer runs production deploy.
+
+See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for branch rules, PR checklist, and
+deploy process.
 
 ## Useful scripts
 

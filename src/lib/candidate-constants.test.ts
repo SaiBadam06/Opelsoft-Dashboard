@@ -14,8 +14,8 @@ describe("candidate constants", () => {
     expect(PIPELINE_STAGES[PIPELINE_STAGES.length - 1].value).toBe("hold");
   });
 
-  it("has 7 statuses", () => {
-    expect(STATUS_OPTIONS).toHaveLength(7);
+  it("has 4 selectable statuses in the UI dropdown", () => {
+    expect(STATUS_OPTIONS).toHaveLength(4);
   });
 
   it("labels stages and statuses for display", () => {
