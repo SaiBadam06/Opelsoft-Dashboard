@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -76,7 +77,7 @@ function matches(s: SubmissionRow, q: string): boolean {
 }
 
 // Inline, fully-styled status editor for the submissions table.
-function SubmissionStatusSelect({
+export function SubmissionStatusSelect({
   id,
   status,
 }: {
@@ -295,7 +296,12 @@ export function SubmissionsTable({
                     {formatDate(s.submitted_date)}
                   </TableCell>
                   <TableCell className="font-medium">
-                    {s.candidate_name ?? DASH}
+                    <Link
+                      href={`/submissions/${s.id}`}
+                      className="hover:underline"
+                    >
+                      {s.candidate_name ?? DASH}
+                    </Link>
                   </TableCell>
                   <TableCell>{s.requirement_title ?? DASH}</TableCell>
                   <TableCell>

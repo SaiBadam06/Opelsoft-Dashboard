@@ -10,7 +10,7 @@ import {
 describe("job constants", () => {
   it("has requirement and submission statuses", () => {
     expect(REQUIREMENT_STATUSES).toHaveLength(4);
-    expect(SUBMISSION_STATUSES).toHaveLength(5);
+    expect(SUBMISSION_STATUSES).toHaveLength(11);
   });
   it("labels enums", () => {
     expect(requirementStatusLabel("on_hold")).toBe("On Hold");

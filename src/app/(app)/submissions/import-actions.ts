@@ -17,10 +17,17 @@ import type { PrimeLayer, SubmissionStatus } from "@/lib/job-constants";
 
 function normStatus(v: string | undefined): SubmissionStatus {
   const s = (v ?? "").toLowerCase();
+  if (s.includes("match")) return "matched";
+  if (s.includes("rtr") && s.includes("receiv")) return "rtr_received";
+  if (s.includes("rtr")) return "rtr_requested";
+  if (s.includes("interview") && s.includes("request")) return "interview_requested";
   if (s.includes("interview")) return "interview_scheduled";
-  if (s.includes("view")) return "viewed";
+  if (s.includes("client") || s.includes("review") || s.includes("view"))
+    return "client_review";
+  if (s.includes("select") || s.includes("offer")) return "selected";
   if (s.includes("reject")) return "rejected";
-  if (s.includes("offer")) return "offer";
+  if (s.includes("hold")) return "on_hold";
+  if (s.includes("plac")) return "placed";
   return "submitted";
 }
 

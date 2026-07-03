@@ -57,7 +57,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     cnt(head("placements")),
     cnt(head("tasks").eq("status", "pending")),
     cnt(head("submissions").eq("submitted_date", today)),
-    cnt(head("submissions").eq("status", "offer")),
+    cnt(head("submissions").eq("status", "selected")),
     cnt(head("candidates").eq("status", "rejected")),
   ]);
 

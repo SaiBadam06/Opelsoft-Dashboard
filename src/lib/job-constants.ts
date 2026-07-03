@@ -1,11 +1,17 @@
 export type RequirementPriority = "low" | "medium" | "high" | "urgent";
 export type RequirementStatus = "open" | "on_hold" | "filled" | "closed";
 export type SubmissionStatus =
+  | "matched"
+  | "rtr_requested"
+  | "rtr_received"
   | "submitted"
-  | "viewed"
+  | "client_review"
+  | "interview_requested"
   | "interview_scheduled"
+  | "selected"
   | "rejected"
-  | "offer";
+  | "on_hold"
+  | "placed";
 export type PrimeLayer = "prime" | "layer";
 
 export interface Opt<T extends string> {
@@ -27,12 +33,19 @@ export const REQUIREMENT_STATUSES: Opt<RequirementStatus>[] = [
   { value: "closed", label: "Closed" },
 ];
 
+// Pipeline order — matches the submission lifecycle.
 export const SUBMISSION_STATUSES: Opt<SubmissionStatus>[] = [
+  { value: "matched", label: "Matched" },
+  { value: "rtr_requested", label: "RTR Requested" },
+  { value: "rtr_received", label: "RTR Received" },
   { value: "submitted", label: "Submitted" },
-  { value: "viewed", label: "Viewed" },
+  { value: "client_review", label: "Client Review" },
+  { value: "interview_requested", label: "Interview Requested" },
   { value: "interview_scheduled", label: "Interview Scheduled" },
+  { value: "selected", label: "Selected" },
   { value: "rejected", label: "Rejected" },
-  { value: "offer", label: "Offer" },
+  { value: "on_hold", label: "On Hold" },
+  { value: "placed", label: "Placed" },
 ];
 
 export const PRIME_LAYERS: Opt<PrimeLayer>[] = [
@@ -92,16 +105,24 @@ export function priorityBadgeClass(p: RequirementPriority): string {
 
 export function submissionStatusBadgeClass(s: SubmissionStatus): string {
   switch (s) {
+    case "matched":
+      return "bg-muted text-muted-foreground";
+    case "rtr_requested":
+    case "rtr_received":
     case "submitted":
       return "bg-info text-info-foreground";
-    case "viewed":
-      return "bg-primary text-primary-foreground";
+    case "client_review":
+    case "interview_requested":
     case "interview_scheduled":
       return "bg-warning text-warning-foreground";
-    case "offer":
+    case "selected":
       return "bg-success text-success-foreground";
+    case "placed":
+      return "bg-primary text-primary-foreground";
     case "rejected":
       return "bg-destructive text-white";
+    case "on_hold":
+      return "bg-muted text-muted-foreground";
     default:
       return "bg-muted text-muted-foreground";
   }
