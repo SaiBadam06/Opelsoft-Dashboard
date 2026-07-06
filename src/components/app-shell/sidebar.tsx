@@ -14,6 +14,7 @@ import {
   Building2,
   ListTodo,
   ShieldCheck,
+  ScrollText,
   type LucideIcon,
 } from "lucide-react";
 
@@ -40,6 +41,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "/placements": Award,
   "/vendors": Building2,
   "/tasks": ListTodo,
+  "/logs": ScrollText,
   "/users": ShieldCheck,
 };
 

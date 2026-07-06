@@ -64,7 +64,7 @@ async function main() {
     await db.from("submissions").insert([
       { candidate_id: cand("Vijetha Tummala"), requirement_id: req("Senior Data Engineer"), vendor_id: vend("Univedge Consulting"), end_client: "Wipro / UHG", prime_layer: "prime", rate: 70, status: "submitted", created_by: adminId },
       { candidate_id: cand("Rohith Avatapally"), requirement_id: req("Java Full Stack Developer"), vendor_id: vend("TekPlant Inc"), end_client: "Royal Caribbean", prime_layer: "layer", rate: 65, status: "interview_scheduled", created_by: adminId },
-      { candidate_id: cand("Mahith"), requirement_id: req("Salesforce Developer"), vendor_id: vend("VBeyond"), end_client: "Citius Tech", prime_layer: "prime", rate: 60, status: "viewed", created_by: adminId },
+      { candidate_id: cand("Mahith"), requirement_id: req("Salesforce Developer"), vendor_id: vend("VBeyond"), end_client: "Citius Tech", prime_layer: "prime", rate: 60, status: "client_review", created_by: adminId },
     ]);
   }
 
