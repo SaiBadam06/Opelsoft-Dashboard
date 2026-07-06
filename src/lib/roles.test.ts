@@ -19,4 +19,9 @@ describe("NAV_ITEMS", () => {
     const users = NAV_ITEMS.find((i) => i.href === "/users");
     expect(users?.minRole).toBe("admin");
   });
+
+  it("includes a Submission Logs item restricted to admin", () => {
+    const logs = NAV_ITEMS.find((i) => i.href === "/logs");
+    expect(logs?.minRole).toBe("admin");
+  });
 });

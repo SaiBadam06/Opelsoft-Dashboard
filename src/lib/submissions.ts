@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { PrimeLayer, SubmissionStatus } from "@/lib/job-constants";
+import { SUBMISSION_STATUSES } from "@/lib/job-constants";
 
 export interface Submission {
   id: string;
@@ -83,4 +84,100 @@ export async function getSubmissionStatusHistory(
     .eq("submission_id", submissionId)
     .order("changed_at", { ascending: false });
   return (data as unknown as SubmissionStatusEvent[] | null) ?? [];
+}
+
+export interface StatusLogRow {
+  id: string;
+  submission_id: string;
+  candidate_name: string | null;
+  from_status: SubmissionStatus | null;
+  to_status: SubmissionStatus;
+  changed_by_name: string | null;
+  changed_at: string;
+}
+
+export interface LogFilters {
+  candidate?: string;
+  status?: SubmissionStatus;
+  from?: string;
+  to?: string;
+}
+
+export function parseLogFilters(searchParams: {
+  [key: string]: string | string[] | undefined;
+}): LogFilters {
+  const filters: LogFilters = {};
+  
+  const getSingle = (val: string | string[] | undefined) =>
+    Array.isArray(val) ? val[0] : val;
+
+  const candidate = getSingle(searchParams.candidate);
+  if (candidate) filters.candidate = candidate;
+
+  const statusStr = getSingle(searchParams.status);
+  if (
+    statusStr &&
+    SUBMISSION_STATUSES.some((s) => s.value === statusStr)
+  ) {
+    filters.status = statusStr as SubmissionStatus;
+  }
+
+  const from = getSingle(searchParams.from);
+  if (from) filters.from = from;
+
+  const to = getSingle(searchParams.to);
+  if (to) filters.to = to;
+
+  return filters;
+}
+
+type LogJoined = {
+  id: string;
+  from_status: SubmissionStatus | null;
+  to_status: SubmissionStatus;
+  changed_by_name: string | null;
+  changed_at: string;
+  submissions: {
+    id: string;
+    candidate_id: string;
+    candidates: { full_name: string } | null;
+  } | null;
+};
+
+export async function listStatusLogs(filters: LogFilters): Promise<StatusLogRow[]> {
+  const supabase = await createClient();
+  let query = supabase
+    .from("submission_status_history")
+    .select(
+      "id, from_status, to_status, changed_by_name, changed_at, submissions!inner(id, candidate_id, candidates(full_name))"
+    )
+    .order("changed_at", { ascending: false })
+    .limit(500);
+
+  if (filters.status) {
+    query = query.eq("to_status", filters.status);
+  }
+  if (filters.from) {
+    query = query.gte("changed_at", filters.from);
+  }
+  if (filters.to) {
+    // End of day logic for 'to' date string
+    // Assuming format YYYY-MM-DD
+    query = query.lte("changed_at", filters.to + "T23:59:59.999Z");
+  }
+  if (filters.candidate) {
+    query = query.eq("submissions.candidate_id", filters.candidate);
+  }
+
+  const { data } = await query;
+
+  return ((data as unknown as LogJoined[] | null) ?? []).map((row) => ({
+    id: row.id,
+    submission_id: row.submissions?.id ?? "",
+    candidate_name: row.submissions?.candidates?.full_name ?? null,
+    from_status: row.from_status,
+    to_status: row.to_status,
+    changed_by_name: row.changed_by_name,
+    changed_at: row.changed_at,
+  }));
 }
