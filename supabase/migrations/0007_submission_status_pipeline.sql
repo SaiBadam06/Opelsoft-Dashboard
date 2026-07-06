@@ -49,8 +49,7 @@ create index submission_status_history_submission_idx
 alter table public.submission_status_history enable row level security;
 create policy "ssh_read" on public.submission_status_history
   for select to authenticated using (true);
-create policy "ssh_insert" on public.submission_status_history
-  for insert to authenticated with check (true);
+-- Inserts are trigger-only (security definer); no client insert policy.
 
 -- 3) Trigger: log every status change automatically (covers all code paths).
 --    security definer so it can read the actor's name past profiles RLS.
@@ -79,6 +78,7 @@ create trigger submissions_log_status
 
 -- 4) Backfill a baseline history entry for submissions that already exist.
 insert into public.submission_status_history
-  (submission_id, from_status, to_status, changed_by, changed_at)
-select id, null, status, created_by, created_at
-from public.submissions;
+  (submission_id, from_status, to_status, changed_by, changed_by_name, changed_at)
+select s.id, null, s.status, s.created_by, p.full_name, s.created_at
+from public.submissions s
+left join public.profiles p on p.id = s.created_by;

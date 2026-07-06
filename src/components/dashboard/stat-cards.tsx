@@ -37,7 +37,7 @@ const METRICS: Metric[] = [
   { label: "Placements", icon: Award, chip: "bg-success text-success-foreground", key: "placements" },
   { label: "Pending Follow-ups", icon: BellRing, chip: "bg-warning text-warning-foreground", key: "pendingFollowups" },
   { label: "Submissions Today", icon: Send, chip: "bg-brand text-primary-foreground", key: "submissionsToday" },
-  { label: "Offers Released", icon: FileCheck, chip: "bg-info text-info-foreground", key: "offersReleased" },
+  { label: "Selected", icon: FileCheck, chip: "bg-info text-info-foreground", key: "offersReleased" },
   { label: "Rejected", icon: XCircle, chip: "bg-destructive text-white", key: "rejected" },
 ];
 

@@ -103,18 +103,39 @@ export interface LogFilters {
   to?: string;
 }
 
+export interface ListStatusLogsResult {
+  logs: StatusLogRow[];
+  error: string | null;
+}
+
+function filterParam(
+  val: string | string[] | undefined,
+): string | undefined {
+  const raw = Array.isArray(val) ? val[0] : val;
+  const trimmed = (raw ?? "").trim();
+  return trimmed === "" ? undefined : trimmed;
+}
+
+/** Inclusive calendar-day upper bound as an exclusive next-day date string. */
+function dayAfter(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + 1);
+  const yy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
 export function parseLogFilters(searchParams: {
   [key: string]: string | string[] | undefined;
 }): LogFilters {
   const filters: LogFilters = {};
-  
-  const getSingle = (val: string | string[] | undefined) =>
-    Array.isArray(val) ? val[0] : val;
 
-  const candidate = getSingle(searchParams.candidate);
+  const candidate = filterParam(searchParams.candidate);
   if (candidate) filters.candidate = candidate;
 
-  const statusStr = getSingle(searchParams.status);
+  const statusStr = filterParam(searchParams.status);
   if (
     statusStr &&
     SUBMISSION_STATUSES.some((s) => s.value === statusStr)
@@ -122,10 +143,10 @@ export function parseLogFilters(searchParams: {
     filters.status = statusStr as SubmissionStatus;
   }
 
-  const from = getSingle(searchParams.from);
+  const from = filterParam(searchParams.from);
   if (from) filters.from = from;
 
-  const to = getSingle(searchParams.to);
+  const to = filterParam(searchParams.to);
   if (to) filters.to = to;
 
   return filters;
@@ -144,16 +165,41 @@ type LogJoined = {
   } | null;
 };
 
-export async function listStatusLogs(filters: LogFilters): Promise<StatusLogRow[]> {
+export async function listStatusLogs(
+  filters: LogFilters,
+): Promise<ListStatusLogsResult> {
+  if (filters.candidate) {
+    const supabase = await createClient();
+    const { data: subs, error: subsError } = await supabase
+      .from("submissions")
+      .select("id")
+      .eq("candidate_id", filters.candidate);
+    if (subsError) return { logs: [], error: subsError.message };
+    const ids = (subs ?? []).map((s) => s.id);
+    if (ids.length === 0) return { logs: [], error: null };
+    const { candidate: _c, ...rest } = filters;
+    return listStatusLogsBySubmissionIds(ids, rest);
+  }
+
+  return listStatusLogsBySubmissionIds(null, filters);
+}
+
+async function listStatusLogsBySubmissionIds(
+  submissionIds: string[] | null,
+  filters: LogFilters,
+): Promise<ListStatusLogsResult> {
   const supabase = await createClient();
   let query = supabase
     .from("submission_status_history")
     .select(
-      "id, from_status, to_status, changed_by_name, changed_at, submissions!inner(id, candidate_id, candidates(full_name))"
+      "id, from_status, to_status, changed_by_name, changed_at, submissions!inner(id, candidate_id, candidates(full_name))",
     )
     .order("changed_at", { ascending: false })
     .limit(500);
 
+  if (submissionIds) {
+    query = query.in("submission_id", submissionIds);
+  }
   if (filters.status) {
     query = query.eq("to_status", filters.status);
   }
@@ -161,17 +207,13 @@ export async function listStatusLogs(filters: LogFilters): Promise<StatusLogRow[
     query = query.gte("changed_at", filters.from);
   }
   if (filters.to) {
-    // End of day logic for 'to' date string
-    // Assuming format YYYY-MM-DD
-    query = query.lte("changed_at", filters.to + "T23:59:59.999Z");
-  }
-  if (filters.candidate) {
-    query = query.eq("submissions.candidate_id", filters.candidate);
+    query = query.lt("changed_at", dayAfter(filters.to));
   }
 
-  const { data } = await query;
+  const { data, error } = await query;
+  if (error) return { logs: [], error: error.message };
 
-  return ((data as unknown as LogJoined[] | null) ?? []).map((row) => ({
+  const logs = ((data as unknown as LogJoined[] | null) ?? []).map((row) => ({
     id: row.id,
     submission_id: row.submissions?.id ?? "",
     candidate_name: row.submissions?.candidates?.full_name ?? null,
@@ -180,4 +222,6 @@ export async function listStatusLogs(filters: LogFilters): Promise<StatusLogRow[
     changed_by_name: row.changed_by_name,
     changed_at: row.changed_at,
   }));
+
+  return { logs, error: null };
 }

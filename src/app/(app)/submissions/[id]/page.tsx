@@ -13,7 +13,7 @@ import { PRIME_LAYERS } from "@/lib/job-constants";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SubmissionStatusSelect } from "../submissions-table";
+import { SubmissionStatusSelect } from "../submission-status-select";
 
 const DASH = "—";
 

@@ -55,6 +55,8 @@ export async function setSubmissionStatus(
     .eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/submissions");
+  revalidatePath(`/submissions/${id}`);
+  revalidatePath("/logs");
   return { ok: true as const };
 }
 

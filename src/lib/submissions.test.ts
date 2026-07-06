@@ -26,6 +26,10 @@ describe("parseLogFilters", () => {
     });
   });
 
+  it("ignores empty strings", () => {
+    expect(parseLogFilters({ candidate: "", status: "" })).toEqual({});
+  });
+
   it("ignores extra keys", () => {
     expect(parseLogFilters({ other: "value", status: "submitted" })).toEqual({
       status: "submitted",

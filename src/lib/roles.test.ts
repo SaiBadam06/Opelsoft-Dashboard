@@ -22,6 +22,7 @@ describe("NAV_ITEMS", () => {
 
   it("includes a Submission Logs item restricted to admin", () => {
     const logs = NAV_ITEMS.find((i) => i.href === "/logs");
+    expect(logs?.label).toBe("Submission Logs");
     expect(logs?.minRole).toBe("admin");
   });
 });
