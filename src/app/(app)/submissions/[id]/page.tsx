@@ -5,6 +5,8 @@ import {
   getSubmission,
   getSubmissionStatusHistory,
 } from "@/lib/submissions";
+import { listNotes } from "@/lib/notes";
+import { listActivityLogs } from "@/lib/activity";
 import {
   submissionStatusLabel,
   submissionStatusBadgeClass,
@@ -14,6 +16,9 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SubmissionStatusSelect } from "../submission-status-select";
+import { NotesSection } from "@/components/shared/notes-section";
+import { ActivityLogSection } from "@/components/shared/activity-log-section";
+
 
 const DASH = "—";
 
@@ -43,10 +48,15 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  await requireProfile();
-  const s = await getSubmission(id);
+  const me = await requireProfile();
+  const [s, history, notes, activityLogs] = await Promise.all([
+    getSubmission(id),
+    getSubmissionStatusHistory(id),
+    listNotes("submission", id),
+    listActivityLogs("submission", id),
+  ]);
+
   if (!s) notFound();
-  const history = await getSubmissionStatusHistory(id);
 
   const primeLayerLabel =
     PRIME_LAYERS.find((p) => p.value === s.prime_layer)?.label ?? null;
@@ -149,17 +159,43 @@ export default async function Page({
         </CardContent>
       </Card>
 
-      {/* Notes */}
+      {/* Original Notes */}
       {s.notes ? (
         <Card>
           <CardHeader>
-            <CardTitle>Notes</CardTitle>
+            <CardTitle>Original Context</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm whitespace-pre-wrap">{s.notes}</p>
           </CardContent>
         </Card>
       ) : null}
+
+      {/* Activity History */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Activity History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ActivityLogSection logs={activityLogs} />
+        </CardContent>
+      </Card>
+
+      {/* Manual Notes */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Manual Notes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <NotesSection 
+            notes={notes} 
+            entityType="submission" 
+            entityId={id} 
+            currentUserRole={me.role} 
+            currentUserId={me.id} 
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }
