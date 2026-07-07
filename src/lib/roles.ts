@@ -24,7 +24,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Vendors", href: "/vendors", minRole: "any" },
   { label: "Tasks", href: "/tasks", minRole: "any" },
   { label: "Activity Logs", href: "/logs", minRole: "admin" },
-  { label: "Submission Logs", href: "/logs", minRole: "admin" },
   { label: "Career sites", href: "/settings/career-sites", minRole: "admin" },
   {
     label: "Distribution channels",
