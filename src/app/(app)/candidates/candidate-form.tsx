@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import type { Candidate } from "@/lib/candidates";
@@ -11,6 +12,9 @@ import {
   PIPELINE_STAGES,
   VISA_OPTIONS,
 } from "@/lib/candidate-constants";
+import { DOCUMENT_TYPES, type DocumentType } from "@/lib/documents";
+import { DocumentTypeBar } from "@/app/(app)/candidates/document-type-bar";
+import { autofillFromDocuments } from "@/app/(app)/candidates/parse-actions";
 import { createCandidate, updateCandidate } from "@/app/(app)/candidates/actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,8 +34,58 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
   const action = candidate ? updateCandidate : createCandidate;
   const [state, formAction, pending] = useActionState(action, null);
 
+  const isCreate = !candidate;
+  const formRef = useRef<HTMLFormElement>(null);
+  const [activeType, setActiveType] = useState<DocumentType>(
+    DOCUMENT_TYPES[0].value,
+  );
+  const [autofilling, setAutofilling] = useState(false);
+
+  // Parse every attached document and fill only the fields the user left blank.
+  async function onAutofill() {
+    const form = formRef.current;
+    if (!form) return;
+    const fd = new FormData();
+    let any = false;
+    for (const d of DOCUMENT_TYPES) {
+      const input = form.elements.namedItem(
+        `doc_${d.value}`,
+      ) as HTMLInputElement | null;
+      for (const file of input?.files ?? []) {
+        fd.append(`doc_${d.value}`, file);
+        any = true;
+      }
+    }
+    if (!any) {
+      toast.error("Attach a document first.");
+      return;
+    }
+    setAutofilling(true);
+    try {
+      const { fields, resumeParsed, errors } =
+        await autofillFromDocuments(fd);
+      for (const [name, value] of Object.entries(fields)) {
+        const el = form.elements.namedItem(name) as
+          | HTMLInputElement
+          | HTMLTextAreaElement
+          | null;
+        if (el && !el.value && value) el.value = value;
+      }
+      const hidden = form.elements.namedItem(
+        "resume_parsed",
+      ) as HTMLInputElement | null;
+      if (hidden && resumeParsed) hidden.value = JSON.stringify(resumeParsed);
+      errors.forEach((e) => toast.error(e));
+      toast.success("Autofilled from documents — review before saving.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setAutofilling(false);
+    }
+  }
+
   return (
-    <form action={formAction} className="flex flex-col gap-6">
+    <form ref={formRef} action={formAction} className="flex flex-col gap-6">
       {candidate ? (
         <input type="hidden" name="id" value={candidate.id} />
       ) : null}
@@ -287,6 +341,48 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Documents (create only): attach by folder, then autofill from them */}
+      {isCreate ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Documents</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <DocumentTypeBar
+              value={activeType}
+              onChange={setActiveType}
+              disabled={autofilling}
+            />
+            {DOCUMENT_TYPES.map((d) => (
+              <div
+                key={d.value}
+                className={activeType === d.value ? "block" : "hidden"}
+              >
+                <Label className="mb-1.5 block">{d.label}</Label>
+                <input
+                  type="file"
+                  name={`doc_${d.value}`}
+                  multiple
+                  className="text-sm"
+                />
+              </div>
+            ))}
+            <input type="hidden" name="resume_parsed" />
+            <div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onAutofill}
+                disabled={autofilling}
+              >
+                {autofilling ? <Loader2 className="animate-spin" /> : null}
+                Autofill from documents
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {state?.error ? (
         <p className="text-sm text-destructive">{state.error}</p>
