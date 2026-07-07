@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useTransition } from "react";
-import { ArrowLeft, Download, ExternalLink, FileInput, UserPlus } from "lucide-react";
+import {
+  ArrowLeft,
+  Download,
+  ExternalLink,
+  Send,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import type { JobApplicationRow } from "@/lib/job-applications";
@@ -24,6 +31,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+const WORKFLOW_STEPS = [
+  "Review the application and update status (New → Reviewing → Shortlisted).",
+  "Convert to candidate — adds them to your candidate pool with resume.",
+  "Follow up on the candidate profile (calls, notes, tasks).",
+  "When ready, submit their profile to a vendor via Submissions.",
+];
+
 export function ApplicationDetail({
   application,
   linkedCandidateId,
@@ -35,10 +49,11 @@ export function ApplicationDetail({
   const [resumePending, startResume] = useTransition();
   const [submissionPending, startSubmission] = useTransition();
 
-  const canCreateSubmission =
+  const isConverted = application.status === "converted";
+  const canSubmitToVendor =
+    isConverted &&
     Boolean(linkedCandidateId) &&
-    Boolean(application.requirement_id) &&
-    application.status === "converted";
+    Boolean(application.requirement_id);
 
   const siteForUrl =
     application.site_slug && application.site_name
@@ -63,20 +78,17 @@ export function ApplicationDetail({
       if (res && "error" in res) {
         toast.error(res.error);
         if ("candidateId" in res && res.candidateId) {
-          toast.info("Open the partial candidate record to finish setup.");
+          toast.info("Open the candidate record to finish setup.");
         }
       }
     });
   }
 
-  function createSubmission() {
+  function submitToVendor() {
     startSubmission(async () => {
       const res = await createSubmissionFromApplication(application.id);
       if (res && "error" in res) {
         toast.error(res.error);
-        if ("submissionId" in res && res.submissionId) {
-          toast.info("Open the existing submission instead.");
-        }
       }
     });
   }
@@ -105,33 +117,29 @@ export function ApplicationDetail({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {application.status !== "converted" ? (
+          {!isConverted ? (
             <Button disabled={pending} onClick={convert}>
               <UserPlus />
               Convert to candidate
             </Button>
+          ) : linkedCandidateId ? (
+            <Button
+              render={
+                <Link href={`/candidates/${linkedCandidateId}`} />
+              }
+            >
+              <Users />
+              Open candidate profile
+            </Button>
           ) : null}
-          {canCreateSubmission ? (
+          {canSubmitToVendor ? (
             <Button
               variant="secondary"
               disabled={submissionPending}
-              onClick={createSubmission}
+              onClick={submitToVendor}
             >
-              <FileInput />
-              Create submission
-            </Button>
-          ) : null}
-          {linkedCandidateId && application.requirement_id ? (
-            <Button
-              variant="outline"
-              render={
-                <Link
-                  href={`/submissions/new?candidate_id=${encodeURIComponent(linkedCandidateId)}&requirement_id=${encodeURIComponent(application.requirement_id)}`}
-                />
-              }
-            >
-              <FileInput />
-              Pre-fill submission form
+              <Send />
+              Submit to vendor
             </Button>
           ) : null}
           {application.resume_path ? (
@@ -146,6 +154,37 @@ export function ApplicationDetail({
           ) : null}
         </div>
       </div>
+
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Recruiter workflow</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+            {WORKFLOW_STEPS.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+          {isConverted ? (
+            <p className="mt-3 text-sm">
+              This person is in your{" "}
+              <strong className="font-medium text-foreground">
+                candidate pool
+              </strong>
+              . Continue follow-up there; use{" "}
+              <strong className="font-medium text-foreground">
+                Submit to vendor
+              </strong>{" "}
+              only when you are ready to send their profile to a client.
+            </p>
+          ) : (
+            <p className="mt-3 text-sm">
+              Applications are inbound leads from careers sites. Convert to a
+              candidate when you want to work them in the main pipeline.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -225,7 +264,7 @@ export function ApplicationDetail({
         <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Job</CardTitle>
+              <CardTitle className="text-base">Job applied for</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <div>
@@ -258,14 +297,18 @@ export function ApplicationDetail({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Status</CardTitle>
+              <CardTitle className="text-base">Screening status</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-col gap-2">
               <ApplicationStatusSelect
                 id={application.id}
                 status={application.status}
-                disabled={application.status === "converted"}
+                disabled={isConverted}
               />
+              <p className="text-xs text-muted-foreground">
+                Tracks your review of this inbound application — not vendor
+                submission status.
+              </p>
             </CardContent>
           </Card>
         </div>

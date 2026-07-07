@@ -52,6 +52,8 @@ export interface JobApplication {
 
   status: JobApplicationStatus;
 
+  candidate_id: string | null;
+
   created_at: string;
 
   updated_at: string;
@@ -78,7 +80,7 @@ export interface JobApplicationRow extends JobApplication {
 
 const APP_COLUMNS =
 
-  "id, job_posting_id, distribution_id, source, candidate_name, email, phone, location, linkedin_url, portfolio_url, resume_path, cover_note, status, created_at, updated_at";
+  "id, job_posting_id, distribution_id, source, candidate_name, email, phone, location, linkedin_url, portfolio_url, resume_path, cover_note, status, candidate_id, created_at, updated_at";
 
 
 

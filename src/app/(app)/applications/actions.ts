@@ -28,6 +28,59 @@ function adminClient() {
   );
 }
 
+function applicationNotes(app: Awaited<ReturnType<typeof getApplication>>) {
+  if (!app) return "";
+  return [
+    app.cover_note ? `Cover note:\n${app.cover_note}` : null,
+    `Converted from careers application (${app.id}).`,
+    app.source ? `Source: ${app.source}` : null,
+    app.site_name ? `Career site: ${app.site_name}` : null,
+    app.job_title ? `Applied for: ${app.job_title}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+async function copyResumeToCandidate(
+  app: NonNullable<Awaited<ReturnType<typeof getApplication>>>,
+  candidateId: string,
+  uploadedBy: string,
+): Promise<{ error?: string }> {
+  if (!app.resume_path) return {};
+
+  const supabase = await createClient();
+  const admin = adminClient();
+  const { data: blob, error: downloadError } = await admin.storage
+    .from(APPLICATION_RESUME_BUCKET)
+    .download(app.resume_path);
+  if (downloadError) {
+    return { error: `Resume copy failed: ${downloadError.message}` };
+  }
+
+  const fileName = app.resume_path.split("/").pop() ?? "resume.pdf";
+  const destPath = `${candidateId}/${Date.now()}-${fileName}`;
+  const { error: uploadError } = await admin.storage
+    .from(DOCUMENT_BUCKET)
+    .upload(destPath, blob, { upsert: false });
+  if (uploadError) {
+    return { error: `Resume upload failed: ${uploadError.message}` };
+  }
+
+  const { error: docError } = await supabase.from("documents").insert({
+    candidate_id: candidateId,
+    type: "resume",
+    file_name: fileName,
+    storage_path: destPath,
+    size_bytes: blob.size,
+    uploaded_by: uploadedBy,
+  });
+  if (docError) {
+    return { error: `Document record failed: ${docError.message}` };
+  }
+
+  return {};
+}
+
 export async function setApplicationStatus(
   id: string,
   status: JobApplicationStatus,
@@ -61,102 +114,20 @@ export async function getApplicationResumeUrl(storagePath: string) {
   return { ok: true as const, url: data.signedUrl };
 }
 
-export async function convertApplicationToCandidate(applicationId: string) {
-  const me = await getCurrentProfile();
-  if (!me) return { error: "Not authorized" };
-
-  const app = await getApplication(applicationId);
-  if (!app) return { error: "Application not found." };
-  if (app.status === "converted") {
-    return { error: "This application was already converted." };
+export async function findCandidateForApplication(
+  email: string,
+  candidateId?: string | null,
+) {
+  if (candidateId) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("candidates")
+      .select("id, full_name")
+      .eq("id", candidateId)
+      .maybeSingle();
+    if (data) return data;
   }
 
-  const supabase = await createClient();
-  const notes = [
-    app.cover_note ? `Cover note:\n${app.cover_note}` : null,
-    `Converted from careers application (${applicationId}).`,
-    app.source ? `Source: ${app.source}` : null,
-    app.site_name ? `Career site: ${app.site_name}` : null,
-    app.job_title ? `Applied for: ${app.job_title}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
-
-  const { data: candidate, error: insertError } = await supabase
-    .from("candidates")
-    .insert({
-      full_name: app.candidate_name,
-      email: app.email,
-      phone: app.phone,
-      location: app.location,
-      linkedin: app.linkedin_url,
-      portfolio: app.portfolio_url,
-      notes,
-      status: "available",
-      pipeline_stage: "new",
-      assigned_coordinator_id: me.id,
-      created_by: me.id,
-      updated_by: me.id,
-    })
-    .select("id")
-    .single();
-
-  if (insertError) return { error: insertError.message };
-
-  if (app.resume_path) {
-    const admin = adminClient();
-    const { data: blob, error: downloadError } = await admin.storage
-      .from(APPLICATION_RESUME_BUCKET)
-      .download(app.resume_path);
-    if (downloadError) {
-      return {
-        error: `Candidate created but resume copy failed: ${downloadError.message}`,
-        candidateId: candidate.id,
-      };
-    }
-
-    const fileName = app.resume_path.split("/").pop() ?? "resume.pdf";
-    const destPath = `${candidate.id}/${Date.now()}-${fileName}`;
-    const { error: uploadError } = await admin.storage
-      .from(DOCUMENT_BUCKET)
-      .upload(destPath, blob, { upsert: false });
-    if (uploadError) {
-      return {
-        error: `Candidate created but resume upload failed: ${uploadError.message}`,
-        candidateId: candidate.id,
-      };
-    }
-
-    const { error: docError } = await supabase.from("documents").insert({
-      candidate_id: candidate.id,
-      type: "resume",
-      file_name: fileName,
-      storage_path: destPath,
-      size_bytes: blob.size,
-      uploaded_by: me.id,
-    });
-    if (docError) {
-      return {
-        error: `Candidate created but document record failed: ${docError.message}`,
-        candidateId: candidate.id,
-      };
-    }
-  }
-
-  const { error: statusError } = await supabase
-    .from("job_applications")
-    .update({ status: "converted" })
-    .eq("id", applicationId);
-  if (statusError) return { error: statusError.message };
-
-  revalidatePath("/applications");
-  revalidatePath(`/applications/${applicationId}`);
-  revalidatePath("/candidates");
-  revalidatePath(`/candidates/${candidate.id}`);
-  redirect(`/candidates/${candidate.id}`);
-}
-
-export async function findCandidateForApplication(email: string) {
   const supabase = await createClient();
   const normalized = email.trim().toLowerCase();
   const { data } = await supabase
@@ -169,6 +140,102 @@ export async function findCandidateForApplication(email: string) {
   return data;
 }
 
+export async function convertApplicationToCandidate(applicationId: string) {
+  const me = await getCurrentProfile();
+  if (!me) return { error: "Not authorized" };
+
+  const app = await getApplication(applicationId);
+  if (!app) return { error: "Application not found." };
+  if (app.status === "converted") {
+    return { error: "This application was already converted." };
+  }
+
+  const supabase = await createClient();
+  const notes = applicationNotes(app);
+  const normalizedEmail = app.email.trim().toLowerCase();
+
+  const existing = await findCandidateForApplication(
+    normalizedEmail,
+    app.candidate_id,
+  );
+
+  let candidateId: string;
+
+  if (existing) {
+    candidateId = existing.id;
+    const { data: row } = await supabase
+      .from("candidates")
+      .select("notes")
+      .eq("id", candidateId)
+      .single();
+    const mergedNotes = [row?.notes, notes].filter(Boolean).join("\n\n---\n\n");
+    const { error: updateError } = await supabase
+      .from("candidates")
+      .update({
+        phone: app.phone ?? undefined,
+        location: app.location ?? undefined,
+        linkedin: app.linkedin_url ?? undefined,
+        portfolio: app.portfolio_url ?? undefined,
+        notes: mergedNotes,
+        updated_by: me.id,
+      })
+      .eq("id", candidateId);
+    if (updateError) return { error: updateError.message };
+  } else {
+    const { data: candidate, error: insertError } = await supabase
+      .from("candidates")
+      .insert({
+        full_name: app.candidate_name,
+        email: normalizedEmail,
+        phone: app.phone,
+        location: app.location,
+        linkedin: app.linkedin_url,
+        portfolio: app.portfolio_url,
+        notes,
+        status: "available",
+        pipeline_stage: "new",
+        assigned_coordinator_id: me.id,
+        created_by: me.id,
+        updated_by: me.id,
+      })
+      .select("id")
+      .single();
+    if (insertError) return { error: insertError.message };
+    candidateId = candidate.id;
+
+    const resumeResult = await copyResumeToCandidate(app, candidateId, me.id);
+    if (resumeResult.error) {
+      return {
+        error: `Candidate created but ${resumeResult.error}`,
+        candidateId,
+      };
+    }
+  }
+
+  if (existing && app.resume_path) {
+    const resumeResult = await copyResumeToCandidate(app, candidateId, me.id);
+    if (resumeResult.error) {
+      return {
+        error: `Linked to existing candidate but ${resumeResult.error}`,
+        candidateId,
+      };
+    }
+  }
+
+  const { error: statusError } = await supabase
+    .from("job_applications")
+    .update({ status: "converted", candidate_id: candidateId })
+    .eq("id", applicationId);
+  if (statusError) return { error: statusError.message };
+
+  revalidatePath("/applications");
+  revalidatePath(`/applications/${applicationId}`);
+  revalidatePath("/candidates");
+  revalidatePath(`/candidates/${candidateId}`);
+  redirect(`/candidates/${candidateId}`);
+}
+
+/** @deprecated Use Submissions → New submission after recruiter follow-up. */
 export async function createSubmissionFromApplication(applicationId: string) {
   const me = await getCurrentProfile();
   if (!me) return { error: "Not authorized" };
@@ -182,7 +249,10 @@ export async function createSubmissionFromApplication(applicationId: string) {
     };
   }
 
-  const candidate = await findCandidateForApplication(app.email);
+  const candidate = await findCandidateForApplication(
+    app.email,
+    app.candidate_id,
+  );
   if (!candidate) {
     return {
       error:
@@ -190,48 +260,7 @@ export async function createSubmissionFromApplication(applicationId: string) {
     };
   }
 
-  const supabase = await createClient();
-  const { data: existing } = await supabase
-    .from("submissions")
-    .select("id")
-    .eq("candidate_id", candidate.id)
-    .eq("requirement_id", app.requirement_id)
-    .maybeSingle();
-  if (existing) {
-    return {
-      error: "A submission already exists for this candidate and requirement.",
-      submissionId: existing.id,
-    };
-  }
-
-  const notes = [
-    `Created from careers application (${applicationId}).`,
-    app.job_title ? `Applied for: ${app.job_title}` : null,
-    app.site_name ? `Career site: ${app.site_name}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  const today = new Date().toISOString().slice(0, 10);
-  const { data: submission, error } = await supabase
-    .from("submissions")
-    .insert({
-      candidate_id: candidate.id,
-      requirement_id: app.requirement_id,
-      submitted_date: today,
-      status: "matched",
-      notes,
-      created_by: me.id,
-    })
-    .select("id")
-    .single();
-
-  if (error) return { error: error.message };
-
-  revalidatePath("/applications");
-  revalidatePath(`/applications/${applicationId}`);
-  revalidatePath("/submissions");
-  revalidatePath(`/submissions/${submission.id}`);
-  revalidatePath("/logs");
-  redirect("/submissions");
+  redirect(
+    `/submissions/new?candidate_id=${encodeURIComponent(candidate.id)}&requirement_id=${encodeURIComponent(app.requirement_id)}`,
+  );
 }

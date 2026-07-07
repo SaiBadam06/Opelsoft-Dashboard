@@ -29,7 +29,7 @@ export const JOB_APPLICATION_STATUSES: Opt<JobApplicationStatus>[] = [
   { value: "reviewing", label: "Reviewing" },
   { value: "shortlisted", label: "Shortlisted" },
   { value: "rejected", label: "Rejected" },
-  { value: "converted", label: "Converted" },
+  { value: "converted", label: "In candidate pool" },
 ];
 
 function labelFrom<T extends string>(opts: Opt<T>[], v: T): string {

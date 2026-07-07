@@ -15,7 +15,10 @@ export default async function ApplicationDetailPage({
   const application = await getApplication(id);
   if (!application) notFound();
 
-  const linked = await findCandidateForApplication(application.email);
+  const linked = await findCandidateForApplication(
+    application.email,
+    application.candidate_id,
+  );
 
   return (
     <ApplicationDetail
