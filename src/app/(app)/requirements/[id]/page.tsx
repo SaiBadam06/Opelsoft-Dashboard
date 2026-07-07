@@ -4,6 +4,8 @@ import { Pencil } from "lucide-react";
 
 import { requireProfile } from "@/lib/auth";
 import { getRequirement } from "@/lib/requirements";
+import { getRequirementPostingState } from "@/lib/job-postings-admin";
+import { JobPostingCard } from "../job-posting-card";
 import {
   requirementStatusLabel,
   requirementStatusBadgeClass,
@@ -53,7 +55,10 @@ export default async function Page({
 }) {
   const { id } = await params;
   const me = await requireProfile();
-  const r = await getRequirement(id);
+  const [r, postingState] = await Promise.all([
+    getRequirement(id),
+    getRequirementPostingState(id),
+  ]);
   if (!r) notFound();
 
   return (
@@ -148,6 +153,8 @@ export default async function Page({
           <LongText value={r.notes} />
         </CardContent>
       </Card>
+
+      <JobPostingCard requirement={r} state={postingState} />
     </div>
   );
 }

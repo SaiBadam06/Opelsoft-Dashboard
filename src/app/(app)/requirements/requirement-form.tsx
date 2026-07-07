@@ -25,6 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { JdDropzone } from "@/components/requirements/jd-dropzone";
 
 const selectClassName = "h-9 rounded-md border bg-background px-3 text-sm";
 
@@ -200,6 +201,9 @@ export function RequirementForm({
                 </option>
               ))}
             </select>
+          </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <JdDropzone notesFieldId="notes" />
           </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="notes">JD</Label>
