@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
+import { DOCUMENT_BUCKET, DOCUMENT_TYPES } from "@/lib/documents";
 import type { CandidateStatus, PipelineStage } from "@/lib/candidate-constants";
 
 function str(formData: FormData, key: string): string | null {
@@ -48,6 +49,43 @@ function buildPayload(formData: FormData) {
   };
 }
 
+// Uploads any documents attached in the create form and records them. The
+// resume row carries its parsed JSON; other doc types stay null. Fail-soft:
+// a bad file never blocks candidate creation.
+async function saveCandidateDocs(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  formData: FormData,
+  candidateId: string,
+  uploaderId: string,
+) {
+  const resumeParsedRaw = String(formData.get("resume_parsed") ?? "");
+  for (const d of DOCUMENT_TYPES) {
+    const files = formData
+      .getAll(`doc_${d.value}`)
+      .filter((v): v is File => v instanceof File && v.size > 0);
+    for (const file of files) {
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `${candidateId}/${Date.now()}-${safe}`;
+      const up = await supabase.storage
+        .from(DOCUMENT_BUCKET)
+        .upload(path, file);
+      if (up.error) continue;
+      await supabase.from("documents").insert({
+        candidate_id: candidateId,
+        type: d.value,
+        file_name: file.name,
+        storage_path: path,
+        size_bytes: file.size,
+        uploaded_by: uploaderId,
+        parsed_data:
+          d.value === "resume" && resumeParsedRaw
+            ? JSON.parse(resumeParsedRaw)
+            : null,
+      });
+    }
+  }
+}
+
 export async function createCandidate(_prev: unknown, formData: FormData) {
   const me = await getCurrentProfile();
   if (!me) return { error: "Not authorized" };
@@ -68,6 +106,7 @@ export async function createCandidate(_prev: unknown, formData: FormData) {
     .single();
 
   if (error) return { error: error.message };
+  await saveCandidateDocs(supabase, formData, data.id, me.id);
   revalidatePath("/candidates");
   revalidatePath("/pipeline");
   redirect(`/candidates/${data.id}`);
