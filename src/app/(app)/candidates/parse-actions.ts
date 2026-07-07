@@ -1,51 +1,48 @@
 "use server";
 
 import { getCurrentProfile } from "@/lib/auth";
-import { extractText, ScannedPdfError } from "@/lib/extract-text";
-import { parseResumeText, parseDocImage, type ParsedResume } from "@/lib/gemini";
+import { extractText } from "@/lib/extract-text";
+import {
+  parseResumeText,
+  parseResumeVision,
+  parseDocImage,
+  parseDocText,
+  type ParsedResume,
+} from "@/lib/gemini";
 import { mergeParsed, type FormFields } from "@/lib/resume-merge";
 
-const IMAGE_RE = /\.(png|jpe?g|webp|heic)$/i;
+// Sent straight to Gemini vision (raw bytes); everything else goes via text.
+const VISION_RE = /\.(pdf|png|jpe?g|webp|heic|gif|bmp|tiff?)$/i;
 
 async function parseOne(
   file: File,
+  asResume: boolean,
 ): Promise<
   | { kind: "resume"; parsed: ParsedResume }
   | { kind: "doc"; parsed: Record<string, unknown> }
 > {
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  // Image → vision. PDF/docx/txt → text, but fall back to vision on scanned PDFs.
-  if (IMAGE_RE.test(file.name)) {
-    return {
-      kind: "doc",
-      parsed: await parseDocImage(
-        buffer.toString("base64"),
-        file.type || "image/jpeg",
-      ),
-    };
+  if (VISION_RE.test(file.name)) {
+    const b64 = buffer.toString("base64");
+    const mime =
+      file.type || (/\.pdf$/i.test(file.name) ? "application/pdf" : "image/jpeg");
+    return asResume
+      ? { kind: "resume", parsed: await parseResumeVision(b64, mime) }
+      : { kind: "doc", parsed: await parseDocImage(b64, mime) };
   }
-  try {
-    const text = await extractText(buffer, file.name);
-    return { kind: "resume", parsed: await parseResumeText(text) };
-  } catch (e) {
-    if (e instanceof ScannedPdfError) {
-      return {
-        kind: "doc",
-        parsed: await parseDocImage(
-          buffer.toString("base64"),
-          "application/pdf",
-        ),
-      };
-    }
-    throw e;
-  }
+
+  const text = await extractText(buffer, file.name);
+  return asResume
+    ? { kind: "resume", parsed: await parseResumeText(text) }
+    : { kind: "doc", parsed: await parseDocText(text) };
 }
 
 /**
- * Parses every attached file. The `doc_resume` input is the primary source;
- * all other files fill blanks. Returns merged form fields + the resume's parsed
- * JSON (to persist on save) + per-file errors (fail-soft).
+ * Parses every attached file. The `doc_resume` input is the primary source
+ * (structured resume parse); all other files fill blanks. Returns merged form
+ * fields + the resume's parsed JSON (to persist on save) + per-file errors
+ * (fail-soft: a bad file never blocks the rest).
  */
 export async function autofillFromDocuments(formData: FormData): Promise<{
   fields: FormFields;
@@ -74,21 +71,16 @@ export async function autofillFromDocuments(formData: FormData): Promise<{
 
   if (resumeFile) {
     try {
-      const r = await parseOne(resumeFile);
-      if (r.kind === "resume") resumeParsed = r.parsed;
-      else others.push(r.parsed);
+      const r = await parseOne(resumeFile, true);
+      resumeParsed = r.parsed as ParsedResume;
     } catch (e) {
       errors.push(`${resumeFile.name}: ${(e as Error).message}`);
     }
   }
   for (const file of otherFiles) {
     try {
-      const r = await parseOne(file);
-      others.push(
-        r.kind === "resume"
-          ? (r.parsed as unknown as Record<string, unknown>)
-          : r.parsed,
-      );
+      const r = await parseOne(file, false);
+      others.push(r.parsed as Record<string, unknown>);
     } catch (e) {
       errors.push(`${file.name}: ${(e as Error).message}`);
     }

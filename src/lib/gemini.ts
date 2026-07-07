@@ -18,8 +18,7 @@ export interface ParsedResume {
   github_urls: string[];
 }
 
-export async function parseResumeText(text: string): Promise<ParsedResume> {
-  const prompt = `Extract structured data from this resume. Be exhaustive and verbatim; do NOT invent anything.
+const RESUME_SCHEMA = `Extract structured data from this resume. Be exhaustive and verbatim; do NOT invent anything.
 Return ONLY valid JSON, no markdown or code fences:
 {
   "candidate_name": string, "email": string, "phone": string, "location": string,
@@ -29,25 +28,49 @@ Return ONLY valid JSON, no markdown or code fences:
   "education": string[],
   "github_urls": string[]
 }
-Use "" or [] for anything absent.
+Use "" or [] for anything absent.`;
 
-Resume Text:
-${text}`;
-  const res = await model.generateContent(prompt);
+/** Parse resume text (docx/txt) into structured fields. */
+export async function parseResumeText(text: string): Promise<ParsedResume> {
+  const res = await model.generateContent(`${RESUME_SCHEMA}\n\nResume Text:\n${text}`);
   return JSON.parse(stripFences(res.response.text().trim())) as ParsedResume;
 }
 
-/** Vision parse for image/scanned docs (licence, work-auth, etc). Returns whatever is readable. */
+/** Parse a resume PDF/image directly with Gemini vision (no pdf-parse needed). */
+export async function parseResumeVision(
+  base64: string,
+  mimeType: string,
+): Promise<ParsedResume> {
+  const res = await model.generateContent([
+    RESUME_SCHEMA,
+    { inlineData: { data: base64, mimeType } },
+  ]);
+  return JSON.parse(stripFences(res.response.text().trim())) as ParsedResume;
+}
+
+const DOC_SCHEMA = `Extract every readable field from this document as flat JSON (key: value).
+Use snake_case keys. Return ONLY valid JSON, no markdown or code fences.`;
+
+/** Generic flat-JSON parse for non-resume image/PDF docs (licence, work-auth, etc). */
 export async function parseDocImage(
   base64: string,
   mimeType: string,
 ): Promise<Record<string, unknown>> {
-  const prompt = `Extract every readable field from this document image as flat JSON (key: value).
-Use snake_case keys. Return ONLY valid JSON, no markdown or code fences.`;
   const res = await model.generateContent([
-    prompt,
+    DOC_SCHEMA,
     { inlineData: { data: base64, mimeType } },
   ]);
+  return JSON.parse(stripFences(res.response.text().trim())) as Record<
+    string,
+    unknown
+  >;
+}
+
+/** Generic flat-JSON parse for non-resume text docs (cover letters, etc). */
+export async function parseDocText(
+  text: string,
+): Promise<Record<string, unknown>> {
+  const res = await model.generateContent(`${DOC_SCHEMA}\n\nDocument Text:\n${text}`);
   return JSON.parse(stripFences(res.response.text().trim())) as Record<
     string,
     unknown
