@@ -30,6 +30,21 @@ import {
 const selectClassName =
   "h-9 rounded-md border bg-background px-3 text-sm";
 
+// base-ui inputs track their value internally, so a plain `el.value = x` gets
+// reverted on re-render. Use the native setter + dispatch an input event so
+// React/base-ui pick up the change and it sticks (and survives submit).
+function setFieldValue(
+  el: HTMLInputElement | HTMLTextAreaElement,
+  value: string,
+) {
+  const proto =
+    el instanceof HTMLTextAreaElement
+      ? HTMLTextAreaElement.prototype
+      : HTMLInputElement.prototype;
+  Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(el, value);
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 export function CandidateForm({ candidate }: { candidate?: Candidate }) {
   const action = candidate ? updateCandidate : createCandidate;
   const [state, formAction, pending] = useActionState(action, null);
@@ -40,6 +55,21 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
     DOCUMENT_TYPES[0].value,
   );
   const [autofilling, setAutofilling] = useState(false);
+  const [hasDocs, setHasDocs] = useState(false);
+
+  // Enable Autofill only once at least one document is attached.
+  function refreshHasDocs() {
+    const form = formRef.current;
+    if (!form) return;
+    setHasDocs(
+      DOCUMENT_TYPES.some((d) => {
+        const input = form.elements.namedItem(
+          `doc_${d.value}`,
+        ) as HTMLInputElement | null;
+        return (input?.files?.length ?? 0) > 0;
+      }),
+    );
+  }
 
   // Parse every attached document and fill only the fields the user left blank.
   async function onAutofill() {
@@ -69,7 +99,7 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
           | HTMLInputElement
           | HTMLTextAreaElement
           | null;
-        if (el && !el.value && value) el.value = value;
+        if (el && !el.value && value) setFieldValue(el, value);
       }
       const hidden = form.elements.namedItem(
         "resume_parsed",
@@ -364,6 +394,7 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
                   type="file"
                   name={`doc_${d.value}`}
                   multiple
+                  onChange={refreshHasDocs}
                   className="text-sm"
                 />
               </div>
@@ -374,11 +405,16 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
                 type="button"
                 variant="secondary"
                 onClick={onAutofill}
-                disabled={autofilling}
+                disabled={autofilling || !hasDocs}
               >
                 {autofilling ? <Loader2 className="animate-spin" /> : null}
                 Autofill from documents
               </Button>
+              {!hasDocs ? (
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Attach a document above to enable autofill.
+                </p>
+              ) : null}
             </div>
           </CardContent>
         </Card>
