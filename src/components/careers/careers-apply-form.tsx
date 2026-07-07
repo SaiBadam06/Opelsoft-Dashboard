@@ -6,6 +6,8 @@ import { Loader2, Upload } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { applyToJob } from "@/app/careers/apply-actions";
+import type { CareerSite } from "@/lib/career-sites";
+import { withCareersSiteQuery } from "@/lib/career-urls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,9 +16,11 @@ import { Textarea } from "@/components/ui/textarea";
 export function CareersApplyForm({
   jobSlug,
   jobTitle,
+  site,
 }: {
   jobSlug: string;
   jobTitle: string;
+  site: Pick<CareerSite, "slug" | "domain">;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [state, formAction, pending] = useActionState(applyToJob, null);
@@ -121,7 +125,11 @@ export function CareersApplyForm({
         <Button
           variant="outline"
           className="min-h-11 w-full sm:w-auto"
-          render={<Link href={`/careers/jobs/${jobSlug}`} />}
+          render={
+            <Link
+              href={withCareersSiteQuery(`/careers/jobs/${jobSlug}`, site)}
+            />
+          }
         >
           Cancel
         </Button>

@@ -5,14 +5,17 @@ import {
   workplaceBadgeClass,
   workplaceTypeLabel,
 } from "@/lib/career-constants";
+import type { CareerSite } from "@/lib/career-sites";
+import { withCareersSiteQuery } from "@/lib/career-urls";
 import type { PublicJobListItem } from "@/lib/job-postings";
 import { ArrowRight } from "lucide-react";
 
 interface CareersJobCardProps {
   job: PublicJobListItem;
+  site: Pick<CareerSite, "slug" | "domain">;
 }
 
-export function CareersJobCard({ job }: CareersJobCardProps) {
+export function CareersJobCard({ job, site }: CareersJobCardProps) {
   const meta = [job.location, job.employment_type].filter(Boolean).join(" · ");
 
   return (
@@ -40,7 +43,7 @@ export function CareersJobCard({ job }: CareersJobCardProps) {
       ) : null}
       <CardContent className="pt-0">
         <Link
-          href={`/careers/jobs/${job.public_slug}`}
+          href={withCareersSiteQuery(`/careers/jobs/${job.public_slug}`, site)}
           className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
         >
           View role

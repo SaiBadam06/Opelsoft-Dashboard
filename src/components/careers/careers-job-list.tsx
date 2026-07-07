@@ -4,10 +4,12 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CareersJobCard } from "@/components/careers/careers-job-card";
+import type { CareerSite } from "@/lib/career-sites";
 import type { PublicJobListItem } from "@/lib/job-postings";
 
 interface CareersJobListProps {
   jobs: PublicJobListItem[];
+  site: Pick<CareerSite, "slug" | "domain">;
 }
 
 function matchesQuery(job: PublicJobListItem, q: string): boolean {
@@ -18,7 +20,7 @@ function matchesQuery(job: PublicJobListItem, q: string): boolean {
   return haystack.includes(q);
 }
 
-export function CareersJobList({ jobs }: CareersJobListProps) {
+export function CareersJobList({ jobs, site }: CareersJobListProps) {
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -57,7 +59,7 @@ export function CareersJobList({ jobs }: CareersJobListProps) {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {filtered.map((job) => (
-            <CareersJobCard key={job.id} job={job} />
+            <CareersJobCard key={job.id} job={job} site={site} />
           ))}
         </div>
       )}

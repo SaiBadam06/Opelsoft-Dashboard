@@ -27,7 +27,7 @@ export default async function CareersPage() {
           </span>
         ) : null}
       </h2>
-      <CareersJobList jobs={jobs} />
+      <CareersJobList jobs={jobs} site={site} />
     </section>
   );
 }

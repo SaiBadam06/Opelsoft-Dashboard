@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -11,6 +10,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { CareersApplyForm } from "@/components/careers/careers-apply-form";
 import { resolveCareerSite } from "@/lib/career-sites";
+import { withCareersSiteQuery } from "@/lib/career-urls";
 import { getPublicJob } from "@/lib/job-postings";
 
 interface ApplyPageProps {
@@ -47,12 +47,14 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/careers">Careers</BreadcrumbLink>
+            <BreadcrumbLink href={withCareersSiteQuery("/careers", site)}>
+              Careers
+            </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem className="min-w-0 max-w-[45%]">
             <BreadcrumbLink
-              href={`/careers/jobs/${jobSlug}`}
+              href={withCareersSiteQuery(`/careers/jobs/${jobSlug}`, site)}
               className="block truncate"
             >
               {job.title}
@@ -65,7 +67,11 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <CareersApplyForm jobSlug={jobSlug} jobTitle={job.title} />
+      <CareersApplyForm
+        jobSlug={jobSlug}
+        jobTitle={job.title}
+        site={site}
+      />
     </div>
   );
 }

@@ -17,6 +17,7 @@ import {
   workplaceTypeLabel,
 } from "@/lib/career-constants";
 import { resolveCareerSite } from "@/lib/career-sites";
+import { withCareersSiteQuery } from "@/lib/career-urls";
 import { careersJobMetadata } from "@/lib/careers-metadata";
 import { getPublicJob } from "@/lib/job-postings";
 
@@ -53,7 +54,9 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/careers">Careers</BreadcrumbLink>
+            <BreadcrumbLink href={withCareersSiteQuery("/careers", site)}>
+              Careers
+            </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -99,14 +102,18 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
       <div className="flex flex-col gap-3 border-t pt-6 sm:flex-row sm:flex-wrap">
         <Button
           className="min-h-11 w-full sm:w-auto"
-          render={<Link href={`/careers/jobs/${jobSlug}/apply`} />}
+          render={
+            <Link
+              href={withCareersSiteQuery(`/careers/jobs/${jobSlug}/apply`, site)}
+            />
+          }
         >
           Apply for this role
         </Button>
         <Button
           variant="outline"
           className="min-h-11 w-full sm:w-auto"
-          render={<Link href="/careers" />}
+          render={<Link href={withCareersSiteQuery("/careers", site)} />}
         >
           Back to all jobs
         </Button>

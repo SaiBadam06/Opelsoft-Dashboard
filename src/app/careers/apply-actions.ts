@@ -8,6 +8,7 @@ import {
   APPLY_MAX_RESUME_BYTES,
 } from "@/lib/job-applications";
 import { resolveCareerSite } from "@/lib/career-sites";
+import { withCareersSiteQuery } from "@/lib/career-urls";
 import { getPublicJob } from "@/lib/job-postings";
 
 function str(fd: FormData, k: string): string | null {
@@ -26,12 +27,13 @@ function adminClient() {
 export async function applyToJob(_prev: unknown, fd: FormData) {
   const honeypot = str(fd, "company_website");
   if (honeypot) {
-    redirect("/careers");
+    const site = await resolveCareerSite();
+    redirect(site ? withCareersSiteQuery("/careers", site) : "/careers");
   }
 
   const jobSlug = String(fd.get("job_slug") ?? "").trim();
   const name = String(fd.get("candidate_name") ?? "").trim();
-  const email = String(fd.get("email") ?? "").trim();
+  const email = String(fd.get("email") ?? "").trim().toLowerCase();
   const phone = str(fd, "phone");
   const location = str(fd, "location");
   const linkedinUrl = str(fd, "linkedin_url");
@@ -98,11 +100,7 @@ export async function applyToJob(_prev: unknown, fd: FormData) {
     return { error: insertError.message };
   }
 
-  const siteParam =
-    site.slug !== (process.env.DEFAULT_CAREER_SITE_SLUG?.trim() || "opelsoft")
-      ? `?site=${encodeURIComponent(site.slug)}`
-      : "";
   redirect(
-    `/careers/jobs/${jobSlug}/apply/thank-you${siteParam}`,
+    withCareersSiteQuery(`/careers/jobs/${jobSlug}/apply/thank-you`, site),
   );
 }
