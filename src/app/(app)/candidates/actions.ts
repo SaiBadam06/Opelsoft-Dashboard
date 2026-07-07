@@ -48,7 +48,11 @@ function buildPayload(formData: FormData) {
   };
 }
 
-export async function createCandidate(_prev: unknown, formData: FormData) {
+// Create variant that returns the new id (no redirect) so the client autofill
+// flow can then upload the resume + save its parse under the new candidate.
+export async function createCandidateReturningId(
+  formData: FormData,
+): Promise<{ id: string } | { error: string }> {
   const me = await getCurrentProfile();
   if (!me) return { error: "Not authorized" };
 
@@ -70,7 +74,7 @@ export async function createCandidate(_prev: unknown, formData: FormData) {
   if (error) return { error: error.message };
   revalidatePath("/candidates");
   revalidatePath("/pipeline");
-  redirect(`/candidates/${data.id}`);
+  return { id: data.id as string };
 }
 
 export async function updateCandidate(
