@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { SubmissionStatus } from "@/lib/job-constants";
 
 export interface ActivityLog {
   id: string;
@@ -9,7 +10,11 @@ export interface ActivityLog {
   action: string;
   actor_id: string | null;
   actor_name: string | null;
-  metadata: any;
+  metadata: {
+    from?: SubmissionStatus;
+    to?: SubmissionStatus;
+    [key: string]: string | undefined;
+  } | null;
   created_at: string;
 }
 
@@ -46,7 +51,7 @@ export async function logActivity(
   entityType: EntityType,
   entityId: string,
   action: string,
-  metadata?: any,
+  metadata?: Record<string, string>,
 ) {
   const supabase = await createClient();
   const {
@@ -80,6 +85,13 @@ export interface GlobalActivityLog extends ActivityLog {
   entity_name: string | null;
 }
 
+type JoinedLogRow = ActivityLog & {
+  candidates?: { full_name: string } | null;
+  requirements?: { title: string } | null;
+  submissions?: { candidates?: { full_name: string } | null } | null;
+  vendors?: { name: string } | null;
+};
+
 function dayAfter(dateStr: string): string {
   const d = new Date(dateStr);
   d.setUTCDate(d.getUTCDate() + 1);
@@ -102,7 +114,7 @@ export async function listGlobalActivityLogs(
       joinString = "*, requirements!inner(title)";
       break;
     case "submission":
-      joinString = "*, submissions!inner(candidate_name)";
+      joinString = "*, submissions!inner(candidates(full_name))";
       break;
     case "vendor":
       joinString = "*, vendors!inner(name)";
@@ -133,12 +145,12 @@ export async function listGlobalActivityLogs(
   if (error) return { logs: [], error: error.message };
 
   // Map joined data to a standard entity_name string
-  const logs = ((data as any[]) ?? []).map((row) => {
-    let entityName = null;
-    if (entityType === "candidate") entityName = row.candidates?.full_name;
-    if (entityType === "requirement") entityName = row.requirements?.title;
-    if (entityType === "submission") entityName = row.submissions?.candidate_name;
-    if (entityType === "vendor") entityName = row.vendors?.name;
+  const logs = ((data as unknown as JoinedLogRow[]) ?? []).map((row) => {
+    let entityName: string | null = null;
+    if (entityType === "candidate") entityName = row.candidates?.full_name ?? null;
+    if (entityType === "requirement") entityName = row.requirements?.title ?? null;
+    if (entityType === "submission") entityName = row.submissions?.candidates?.full_name ?? null;
+    if (entityType === "vendor") entityName = row.vendors?.name ?? null;
 
     return {
       ...row,
@@ -174,8 +186,8 @@ export async function getGlobalLogOptions(entityType: EntityType): Promise<{
     const { data } = await supabase.from("requirements").select("id, title").order("title");
     entities = (data ?? []).map((d) => ({ id: d.id, name: d.title }));
   } else if (entityType === "submission") {
-    const { data } = await supabase.from("submissions").select("id, candidate_name").order("candidate_name");
-    entities = (data ?? []).map((d) => ({ id: d.id, name: d.candidate_name || "Unknown" }));
+    const { data } = await supabase.from("submissions").select("id, candidates(full_name)");
+    entities = ((data as unknown as { id: string; candidates: { full_name: string } | null }[]) ?? []).map((d) => ({ id: d.id, name: d.candidates?.full_name || "Unknown" }));
   } else if (entityType === "vendor") {
     const { data } = await supabase.from("vendors").select("id, name").order("name");
     entities = (data ?? []).map((d) => ({ id: d.id, name: d.name }));

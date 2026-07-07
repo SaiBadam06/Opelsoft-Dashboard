@@ -1,4 +1,4 @@
-import { requireProfile } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import {
   listGlobalActivityLogs,
@@ -29,7 +29,7 @@ export const metadata = {
 export default async function LogsPage(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  await requireProfile();
+  await requireAdmin();
 
   const searchParams = await props.searchParams;
   const tab = (searchParams.tab as EntityType) || "candidate";
@@ -112,24 +112,24 @@ export default async function LogsPage(props: {
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <span className="font-medium">{log.action}</span>
-                        {log.action === "Status changed" && log.metadata?.from_status && log.metadata?.to_status ? (
+                        {log.action === "Status changed" && log.metadata?.from && log.metadata?.to ? (
                           <div className="flex items-center gap-2 mt-1">
                             <Badge
                               className={cn(
                                 "font-normal",
-                                submissionStatusBadgeClass(log.metadata.from_status),
+                                submissionStatusBadgeClass(log.metadata.from),
                               )}
                             >
-                              {submissionStatusLabel(log.metadata.from_status)}
+                              {submissionStatusLabel(log.metadata.from)}
                             </Badge>
                             <span className="text-muted-foreground text-xs">→</span>
                             <Badge
                               className={cn(
                                 "font-normal",
-                                submissionStatusBadgeClass(log.metadata.to_status),
+                                submissionStatusBadgeClass(log.metadata.to),
                               )}
                             >
-                              {submissionStatusLabel(log.metadata.to_status)}
+                              {submissionStatusLabel(log.metadata.to)}
                             </Badge>
                           </div>
                         ) : null}
