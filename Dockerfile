@@ -7,7 +7,9 @@
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# npm ci fails when lockfile was generated on Windows (optional @emnapi/* mismatch).
+# Use npm install in Docker; CI on ubuntu-latest still runs npm ci to catch drift.
+RUN npm install --no-audit --no-fund
 
 # ---- builder: compile the Next.js standalone bundle ----
 FROM node:22-bookworm-slim AS builder
