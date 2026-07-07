@@ -22,6 +22,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Placements", href: "/placements", minRole: "any" },
   { label: "Vendors", href: "/vendors", minRole: "any" },
   { label: "Tasks", href: "/tasks", minRole: "any" },
-  { label: "Submission Logs", href: "/logs", minRole: "admin" },
+  { label: "Activity Logs", href: "/logs", minRole: "admin" },
   { label: "Users", href: "/users", minRole: "admin" },
 ];
