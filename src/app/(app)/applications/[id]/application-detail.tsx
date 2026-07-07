@@ -131,7 +131,12 @@ export function ApplicationDetail({
               <Users />
               Open candidate profile
             </Button>
-          ) : null}
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Converted — open Candidates and search by email to find the
+              profile.
+            </p>
+          )}
           {canSubmitToVendor ? (
             <Button
               variant="secondary"

@@ -81,6 +81,16 @@ async function copyResumeToCandidate(
   return {};
 }
 
+async function candidateHasResume(candidateId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("documents")
+    .select("*", { count: "exact", head: true })
+    .eq("candidate_id", candidateId)
+    .eq("type", "resume");
+  return (count ?? 0) > 0;
+}
+
 export async function setApplicationStatus(
   id: string,
   status: JobApplicationStatus,
@@ -88,6 +98,11 @@ export async function setApplicationStatus(
   const me = await getCurrentProfile();
   if (!me) return { error: "Not authorized" };
   if (!VALID_STATUSES.includes(status)) return { error: "Invalid status." };
+  if (status === "converted") {
+    return {
+      error: "Use Convert to candidate — status becomes In candidate pool automatically.",
+    };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -213,12 +228,15 @@ export async function convertApplicationToCandidate(applicationId: string) {
   }
 
   if (existing && app.resume_path) {
-    const resumeResult = await copyResumeToCandidate(app, candidateId, me.id);
-    if (resumeResult.error) {
-      return {
-        error: `Linked to existing candidate but ${resumeResult.error}`,
-        candidateId,
-      };
+    const hasResume = await candidateHasResume(candidateId);
+    if (!hasResume) {
+      const resumeResult = await copyResumeToCandidate(app, candidateId, me.id);
+      if (resumeResult.error) {
+        return {
+          error: `Linked to existing candidate but ${resumeResult.error}`,
+          candidateId,
+        };
+      }
     }
   }
 
@@ -246,6 +264,11 @@ export async function createSubmissionFromApplication(applicationId: string) {
     return {
       error:
         "This job posting is not linked to an internal requirement. Link it on the requirement detail page first.",
+    };
+  }
+  if (app.status !== "converted") {
+    return {
+      error: "Convert this application to a candidate before submitting to a vendor.",
     };
   }
 

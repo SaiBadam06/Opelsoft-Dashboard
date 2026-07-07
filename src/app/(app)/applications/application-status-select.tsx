@@ -56,7 +56,7 @@ export function ApplicationStatusSelect({
         disabled={pending || disabled}
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          "inline-flex w-32 items-center justify-between gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring",
+          "inline-flex min-w-[8.5rem] items-center justify-between gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring",
           applicationStatusBadgeClass(value),
           (pending || disabled) && "opacity-60",
         )}
@@ -70,7 +70,8 @@ export function ApplicationStatusSelect({
         onClick={(e) => e.stopPropagation()}
       >
         <DropdownMenuGroup>
-          {JOB_APPLICATION_STATUSES.map((o) => (
+          {JOB_APPLICATION_STATUSES.filter((o) => o.value !== "converted").map(
+            (o) => (
             <DropdownMenuItem
               key={o.value}
               onClick={() => choose(o.value)}
@@ -81,7 +82,8 @@ export function ApplicationStatusSelect({
                 <Check className="size-3.5 text-muted-foreground" />
               ) : null}
             </DropdownMenuItem>
-          ))}
+          ),
+          )}
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
