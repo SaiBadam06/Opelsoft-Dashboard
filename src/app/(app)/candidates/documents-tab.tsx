@@ -35,6 +35,7 @@ import {
   deleteDocument,
   getDocumentUrl,
 } from "@/app/(app)/candidates/document-actions";
+import { DocumentTypeBar } from "@/app/(app)/candidates/document-type-bar";
 
 export function DocumentsTab({
   candidateId,
@@ -94,18 +95,7 @@ export function DocumentsTab({
       <CardContent className="flex flex-col gap-6">
         {/* Upload row */}
         <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as DocumentType)}
-            disabled={uploading}
-            className="h-9 rounded-md border bg-background px-3 text-sm"
-          >
-            {DOCUMENT_TYPES.map((d) => (
-              <option key={d.value} value={d.value}>
-                {d.label}
-              </option>
-            ))}
-          </select>
+          <DocumentTypeBar value={type} onChange={setType} disabled={uploading} />
           <Input
             ref={fileInputRef}
             type="file"
