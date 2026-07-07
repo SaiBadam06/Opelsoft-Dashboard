@@ -1,13 +1,18 @@
 # syntax=docker/dockerfile:1
 
+# Debian slim (glibc) — matches GitHub Actions ubuntu-latest so npm ci + lockfile align.
+# Alpine musl pulls different @tailwindcss/oxide optional bindings and breaks npm ci.
+
 # ---- deps: install node_modules ----
-FROM node:22-alpine AS deps
+FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# npm ci fails when lockfile was generated on Windows (optional @emnapi/* mismatch).
+# Use npm install in Docker; CI on ubuntu-latest still runs npm ci to catch drift.
+RUN npm install --no-audit --no-fund
 
 # ---- builder: compile the Next.js standalone bundle ----
-FROM node:22-alpine AS builder
+FROM node:22-bookworm-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -26,12 +31,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # ---- runner: minimal production image ----
-FROM node:22-alpine AS runner
+FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid nodejs nextjs
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./

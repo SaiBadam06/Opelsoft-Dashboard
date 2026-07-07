@@ -10,8 +10,19 @@ export interface DashboardMetrics {
   placements: number;
   pendingFollowups: number;
   submissionsToday: number;
+  applicationsThisWeek: number;
   offersReleased: number;
   rejected: number;
+}
+
+function startOfWeekIso(): string {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(d);
+  monday.setDate(diff);
+  monday.setHours(0, 0, 0, 0);
+  return monday.toISOString();
 }
 
 async function cnt(q: PromiseLike<{ count: number | null }>): Promise<number> {
@@ -35,6 +46,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     placements,
     pendingFollowups,
     submissionsToday,
+    applicationsThisWeek,
     offersReleased,
     rejected,
   ] = await Promise.all([
@@ -57,6 +69,9 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     cnt(head("placements")),
     cnt(head("tasks").eq("status", "pending")),
     cnt(head("submissions").eq("submitted_date", today)),
+    cnt(
+      head("job_applications").gte("created_at", startOfWeekIso()),
+    ),
     cnt(head("submissions").eq("status", "selected")),
     cnt(head("candidates").eq("status", "rejected")),
   ]);
@@ -70,6 +85,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     placements,
     pendingFollowups,
     submissionsToday,
+    applicationsThisWeek,
     offersReleased,
     rejected,
   };
