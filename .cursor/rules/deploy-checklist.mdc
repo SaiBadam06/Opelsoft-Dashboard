@@ -1,0 +1,20 @@
+---
+description: Run production build before Cloud Run deploy; post-deploy smoke checks
+alwaysApply: true
+---
+
+# Deploy checklist (Cloud Run + StaffingOS)
+
+Before **any** production deploy (`scripts/deploy-cloudrun.sh`, `scripts/deploy-with-env.mjs`, or `gcloud builds submit`):
+
+1. **On `main`** (or merge target) with latest changes pulled.
+2. **`npm run build`** — must pass locally. This runs the same TypeScript check Cloud Build uses; do not skip.
+3. Deploy only after build is green.
+
+After deploy:
+
+1. Confirm Cloud Run revision is serving 100% traffic.
+2. `GET /login` returns 200 on https://opelsoft-dashboard-ulla3fdzha-uc.a.run.app
+3. Smoke-test critical paths changed in the release (e.g. Activity Logs sidebar label, `/logs` tabs, entity timelines).
+
+GCP defaults for this repo: `GCP_PROJECT_ID=staffingos-500618`, `GCP_REGION=us-central1`, `SITE_URL=https://opelsoft-dashboard-ulla3fdzha-uc.a.run.app`. Env vars come from `.env.local` via `scripts/deploy-with-env.mjs`.
