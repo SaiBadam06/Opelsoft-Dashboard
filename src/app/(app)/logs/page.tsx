@@ -1,11 +1,11 @@
 import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import {
-  listStatusLogs,
-  parseLogFilters,
-} from "@/lib/submissions";
-import { candidateOptions } from "@/lib/candidates";
-import { LogsFilters } from "./logs-filters";
+  listGlobalActivityLogs,
+  getGlobalLogOptions,
+  EntityType,
+} from "@/lib/activity";
+import { LogsFilters, LogsTabs } from "./logs-filters";
 import {
   submissionStatusLabel,
   submissionStatusBadgeClass,
@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata = {
-  title: "Submission Logs | OpelSoft",
+  title: "Activity Logs | OpelSoft",
 };
 
 export default async function LogsPage(props: {
@@ -32,33 +32,57 @@ export default async function LogsPage(props: {
   await requireAdmin();
 
   const searchParams = await props.searchParams;
-  const filters = parseLogFilters(searchParams);
-  const [{ logs, error }, candidates] = await Promise.all([
-    listStatusLogs(filters),
-    candidateOptions(),
+  const tab = (searchParams.tab as EntityType) || "candidate";
+
+  const filters = {
+    entity_id: searchParams.entity_id as string | undefined,
+    action: searchParams.action as string | undefined,
+    from: searchParams.from as string | undefined,
+    to: searchParams.to as string | undefined,
+  };
+
+  const [{ logs, error }, { actions, entities }] = await Promise.all([
+    listGlobalActivityLogs(tab, filters),
+    getGlobalLogOptions(tab),
   ]);
+
+  const getEntityLabel = (t: EntityType) => {
+    switch (t) {
+      case "candidate": return "Candidate";
+      case "requirement": return "Requirement";
+      case "submission": return "Submission";
+      case "vendor": return "Vendor";
+      default: return "Entity";
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Submission Logs</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Activity Logs</h1>
       </div>
 
+      <LogsTabs currentTab={tab} />
+
       <div className="rounded-xl border bg-card p-4">
-        <LogsFilters candidates={candidates} />
+        <LogsFilters 
+          entities={entities} 
+          actions={actions} 
+          entityLabel={getEntityLabel(tab)}
+        />
       </div>
 
       {error ? (
         <div className="rounded-xl border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">
-          Unable to load submission logs: {error}
+          Unable to load activity logs: {error}
         </div>
       ) : (
         <div className="rounded-xl border bg-card overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead>Candidate</TableHead>
-                <TableHead>Change</TableHead>
+                <TableHead>{getEntityLabel(tab)}</TableHead>
+                <TableHead>Action</TableHead>
                 <TableHead>By</TableHead>
                 <TableHead className="text-right">When</TableHead>
               </TableRow>
@@ -67,56 +91,53 @@ export default async function LogsPage(props: {
               {logs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center">
-                    No status changes match these filters.
+                    No activity logs match these filters.
                   </TableCell>
                 </TableRow>
               ) : (
                 logs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell className="font-medium">
-                      {log.submission_id ? (
+                      {log[`${tab}_id`] ? (
                         <Link
-                          href={`/submissions/${log.submission_id}`}
+                          href={`/${tab}s/${log[`${tab}_id`]}`}
                           className="hover:underline text-primary"
                         >
-                          {log.candidate_name || "Unknown Candidate"}
+                          {log.entity_name || `Unknown ${getEntityLabel(tab)}`}
                         </Link>
                       ) : (
-                        log.candidate_name || "Unknown Candidate"
+                        log.entity_name || `Unknown ${getEntityLabel(tab)}`
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        {log.from_status ? (
-                          <>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium">{log.action}</span>
+                        {log.action === "Status changed" && log.metadata?.from && log.metadata?.to ? (
+                          <div className="flex items-center gap-2 mt-1">
                             <Badge
                               className={cn(
                                 "font-normal",
-                                submissionStatusBadgeClass(log.from_status),
+                                submissionStatusBadgeClass(String(log.metadata.from)),
                               )}
                             >
-                              {submissionStatusLabel(log.from_status)}
+                              {submissionStatusLabel(String(log.metadata.from))}
                             </Badge>
-                            <span className="text-muted-foreground">→</span>
-                          </>
-                        ) : (
-                          <span className="text-muted-foreground text-sm italic mr-2">
-                            created as
-                          </span>
-                        )}
-                        <Badge
-                          className={cn(
-                            "font-normal",
-                            submissionStatusBadgeClass(log.to_status),
-                          )}
-                        >
-                          {submissionStatusLabel(log.to_status)}
-                        </Badge>
+                            <span className="text-muted-foreground text-xs">→</span>
+                            <Badge
+                              className={cn(
+                                "font-normal",
+                                submissionStatusBadgeClass(String(log.metadata.to)),
+                              )}
+                            >
+                              {submissionStatusLabel(String(log.metadata.to))}
+                            </Badge>
+                          </div>
+                        ) : null}
                       </div>
                     </TableCell>
-                    <TableCell>{log.changed_by_name || "System"}</TableCell>
+                    <TableCell>{log.actor_name || "System"}</TableCell>
                     <TableCell className="text-right whitespace-nowrap text-muted-foreground">
-                      {formatDateTime(log.changed_at)}
+                      {formatDateTime(log.created_at)}
                     </TableCell>
                   </TableRow>
                 ))

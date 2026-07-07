@@ -4,6 +4,8 @@ import { Pencil } from "lucide-react";
 
 import { requireProfile } from "@/lib/auth";
 import { getRequirement } from "@/lib/requirements";
+import { listNotes } from "@/lib/notes";
+import { listActivityLogs } from "@/lib/activity";
 import { getRequirementPostingState } from "@/lib/job-postings-admin";
 import { JobPostingCard } from "../job-posting-card";
 import {
@@ -16,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DeleteRequirementButton } from "../requirements-table";
+import { NotesSection } from "@/components/shared/notes-section";
+import { ActivityLogSection } from "@/components/shared/activity-log-section";
 
 const DASH = "—";
 
@@ -60,6 +64,11 @@ export default async function Page({
     getRequirementPostingState(id),
   ]);
   if (!r) notFound();
+
+  const [notes, activityLogs] = await Promise.all([
+    listNotes("requirement", id),
+    listActivityLogs("requirement", id),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -154,6 +163,31 @@ export default async function Page({
         </CardContent>
       </Card>
 
+      {/* Activity History */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Activity History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ActivityLogSection logs={activityLogs} />
+        </CardContent>
+      </Card>
+
+      {/* Manual Notes */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Manual Notes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <NotesSection 
+            notes={notes} 
+            entityType="requirement" 
+            entityId={id} 
+            currentUserRole={me.role} 
+            currentUserId={me.id} 
+          />
+        </CardContent>
+      </Card>
       <JobPostingCard requirement={r} state={postingState} />
     </div>
   );

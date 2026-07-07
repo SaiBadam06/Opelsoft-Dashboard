@@ -8,6 +8,8 @@ import {
   listCoordinators,
   type Candidate,
 } from "@/lib/candidates";
+import { listNotes } from "@/lib/notes";
+import { listActivityLogs } from "@/lib/activity";
 import {
   statusLabel,
   statusBadgeClass,
@@ -29,6 +31,8 @@ import {
   DeleteCandidateButton,
 } from "../reassign-control";
 import { DocumentsTab } from "@/app/(app)/candidates/documents-tab";
+import { NotesSection } from "@/components/shared/notes-section";
+import { ActivityLogSection } from "@/components/shared/activity-log-section";
 
 const DASH = "—";
 
@@ -89,7 +93,11 @@ export default async function Page({
   if (!candidate) notFound();
 
   const c: Candidate = candidate;
-  const documents = await listDocuments(id);
+  const [documents, notes, activityLogs] = await Promise.all([
+    listDocuments(id),
+    listNotes("candidate", id),
+    listActivityLogs("candidate", id),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -147,6 +155,7 @@ export default async function Page({
           <TabsTrigger value="status">Status</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="notes">Notes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -254,15 +263,33 @@ export default async function Page({
                   {formatDateTime(c.updated_at)}
                 </Field>
               </Grid>
-              <p className="text-sm text-muted-foreground">
-                Activity history arrives in a later plan.
-              </p>
+              <div className="mt-4 border-t pt-4">
+                <h3 className="font-semibold mb-4">Activity History</h3>
+                <ActivityLogSection logs={activityLogs} />
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="documents">
           <DocumentsTab candidateId={id} documents={documents} />
+        </TabsContent>
+        
+        <TabsContent value="notes">
+          <Card>
+            <CardHeader>
+              <CardTitle>Manual Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <NotesSection 
+                notes={notes} 
+                entityType="candidate" 
+                entityId={id} 
+                currentUserRole={me.role} 
+                currentUserId={me.id} 
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

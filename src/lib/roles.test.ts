@@ -20,9 +20,9 @@ describe("NAV_ITEMS", () => {
     expect(users?.minRole).toBe("admin");
   });
 
-  it("includes a Submission Logs item restricted to admin", () => {
-    const logs = NAV_ITEMS.find((i) => i.href === "/logs");
-    expect(logs?.label).toBe("Submission Logs");
+  it("includes an Activity Logs item restricted to admin", () => {
+    const logs = NAV_ITEMS.find((n) => n.href === "/logs");
+    expect(logs?.label).toBe("Activity Logs");
     expect(logs?.minRole).toBe("admin");
   });
 });
