@@ -28,7 +28,7 @@ export function LogsTabs({ currentTab }: { currentTab: string }) {
 
   return (
     <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-4 md:w-[400px]">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="candidate">Candidates</TabsTrigger>
         <TabsTrigger value="requirement">Requirements</TabsTrigger>
         <TabsTrigger value="submission">Submissions</TabsTrigger>
