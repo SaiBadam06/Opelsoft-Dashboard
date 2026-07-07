@@ -12,7 +12,11 @@
     "test:watch": "vitest",
     "seed": "dotenv -e .env.local -- tsx ./scripts/seed.ts",
     "seed:candidates": "dotenv -e .env.local -- tsx ./scripts/seed-candidates.ts",
-    "seed:all": "dotenv -e .env.local -- tsx ./scripts/seed-all.ts"
+    "seed:all": "dotenv -e .env.local -- tsx ./scripts/seed-all.ts",
+    "seed:careers-demo": "dotenv -e .env.local -- tsx ./scripts/seed-careers-demo.ts",
+    "test:careers-apply": "dotenv -e .env.local -- node scripts/test-apply-e2e.mjs",
+    "test:careers-bridge": "dotenv -e .env.local -- node scripts/test-submission-bridge.mjs",
+    "test:careers-branding": "dotenv -e .env.local -- node scripts/test-career-branding.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -26,9 +30,11 @@
     "clsx": "^2.1.1",
     "gsap": "^3.15.0",
     "lucide-react": "^1.21.0",
+    "mammoth": "^1.12.0",
     "next": "16.2.9",
     "next-themes": "^0.4.6",
     "nodemailer": "^9.0.1",
+    "pdf-parse": "^2.4.5",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "shadcn": "^4.11.0",

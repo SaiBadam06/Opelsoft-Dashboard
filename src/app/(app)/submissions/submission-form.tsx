@@ -25,11 +25,15 @@ export function SubmissionForm({
   requirements,
   vendors,
   today,
+  defaultCandidateId,
+  defaultRequirementId,
 }: {
   candidates: { id: string; full_name: string }[];
   requirements: { id: string; title: string }[];
   vendors: { id: string; name: string }[];
   today: string;
+  defaultCandidateId?: string;
+  defaultRequirementId?: string;
 }) {
   const [state, formAction, pending] = useActionState(createSubmission, null);
 
@@ -50,7 +54,7 @@ export function SubmissionForm({
               name="candidate_id"
               required
               className={selectClassName}
-              defaultValue=""
+              defaultValue={defaultCandidateId ?? ""}
             >
               <option value="" disabled>
                 Select a candidate
@@ -68,7 +72,7 @@ export function SubmissionForm({
               id="requirement_id"
               name="requirement_id"
               className={selectClassName}
-              defaultValue=""
+              defaultValue={defaultRequirementId ?? ""}
             >
               <option value="" />
               {requirements.map((r) => (
@@ -137,7 +141,7 @@ export function SubmissionForm({
               id="status"
               name="status"
               className={selectClassName}
-              defaultValue="submitted"
+              defaultValue={defaultRequirementId ? "matched" : "submitted"}
             >
               {SUBMISSION_STATUSES.map((o) => (
                 <option key={o.value} value={o.value}>
