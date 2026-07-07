@@ -1,8 +1,10 @@
 import mammoth from "mammoth";
-// ponytail: pdf-parse v1 bundles its own pdfjs fork with no web worker — require() avoids
-// moduleResolution:bundler conflict with its export= syntax
+// ponytail: require the inner lib, not the package index. index.js runs a debug
+// block that reads a local test PDF and its export doesn't survive Next's CJS
+// interop ("pdfParse is not a function"). The default-guard covers both shapes.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require("pdf-parse") as (b: Buffer) => Promise<{ text: string }>;
+const pdfParseMod = require("pdf-parse/lib/pdf-parse.js");
+const pdfParse = (pdfParseMod.default ?? pdfParseMod) as (b: Buffer) => Promise<{ text: string }>;
 
 export async function extractText(buffer: Buffer, filename: string): Promise<string> {
   const ext = filename.split(".").pop()?.toLowerCase();
