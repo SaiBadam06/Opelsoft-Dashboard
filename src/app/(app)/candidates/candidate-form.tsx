@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Upload } from "lucide-react";
+import { Loader2, Sparkles, Upload, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { Candidate } from "@/lib/candidates";
@@ -20,7 +20,7 @@ import {
 import { parseResumeAction, saveResumeParseAction } from "@/app/(app)/candidates/parse-actions";
 import { recordDocument } from "@/app/(app)/candidates/document-actions";
 import { DocumentTypeBar } from "@/app/(app)/candidates/document-type-bar";
-import { DOCUMENT_BUCKET, type DocumentType } from "@/lib/documents";
+import { DOCUMENT_BUCKET, documentTypeLabel, type DocumentType } from "@/lib/documents";
 import { createClient } from "@/lib/supabase/client";
 import type { GitHubRepo, ParsedResume } from "@/lib/parsing/types";
 import { Input } from "@/components/ui/input";
@@ -51,7 +51,7 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
   const [autofilling, setAutofilling] = useState(false);
   const [prefill, setPrefill] = useState<Record<string, string>>({});
   const [prefillKey, setPrefillKey] = useState(0);
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<Partial<Record<DocumentType, File>>>({});
   const [parsedData, setParsedData] = useState<{
     parsed: ParsedResume;
     githubRepos: GitHubRepo[];
@@ -66,10 +66,27 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
     return prefill[pk] ?? (candidate?.[key] as string | number | null | undefined) ?? "";
   };
 
+  // Store the picked file under the active type; reset the native input so the same
+  // tab can be re-picked and switching tabs shows a clean input.
+  function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) setFiles((m) => ({ ...m, [docType]: f }));
+    e.target.value = "";
+  }
+
+  function removeFile(type: DocumentType) {
+    setFiles((m) => {
+      const next = { ...m };
+      delete next[type];
+      return next;
+    });
+    if (type === "resume") setParsedData(null); // parse is meaningless without its resume
+  }
+
   async function onAutofill() {
-    const file = fileRef.current?.files?.[0] ?? null;
+    const file = files.resume ?? null;
     if (!file) {
-      toast.error("Choose a resume file first.");
+      toast.error("Choose a resume file on the Resume tab first.");
       return;
     }
     setAutofilling(true);
@@ -81,7 +98,6 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
         toast.error(res.error);
         return;
       }
-      setResumeFile(file);
       setParsedData({ parsed: res.parsed, githubRepos: res.githubRepos });
       setPrefill(res.fields);
       setPrefillKey((k) => k + 1); // remount fields so defaultValues pick up the parse
@@ -108,21 +124,26 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
       }
       const id = res.id;
 
-      if (resumeFile && parsedData) {
+      const attached = Object.entries(files) as [DocumentType, File][];
+      if (attached.length) {
         const supabase = createClient();
-        const safeName = resumeFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-        const path = `${id}/${Date.now()}-${safeName}`;
-        const up = await supabase.storage.from(DOCUMENT_BUCKET).upload(path, resumeFile);
-        if (up.error) {
-          toast.error(`Candidate saved, but resume upload failed: ${up.error.message}`);
-        } else {
+        for (const [type, file] of attached) {
+          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+          const path = `${id}/${Date.now()}-${type}-${safeName}`; // type keeps paths unique per doc
+          const up = await supabase.storage.from(DOCUMENT_BUCKET).upload(path, file);
+          if (up.error) {
+            toast.error(`Candidate saved, but ${documentTypeLabel(type)} upload failed: ${up.error.message}`);
+            continue;
+          }
           await recordDocument({
             candidateId: id,
-            type: docType,
-            fileName: resumeFile.name,
+            type,
+            fileName: file.name,
             storagePath: path,
-            sizeBytes: resumeFile.size,
+            sizeBytes: file.size,
           });
+        }
+        if (files.resume && parsedData) {
           await saveResumeParseAction(id, parsedData.parsed, parsedData.githubRepos);
         }
       }
@@ -154,22 +175,50 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
                 type="file"
                 accept=".pdf,.docx,.txt"
                 disabled={autofilling}
+                onChange={onPickFile}
                 className="w-full sm:w-auto"
               />
-              <Button type="button" variant="secondary" onClick={onAutofill} disabled={autofilling}>
-                {autofilling ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                Autofill
-              </Button>
-              {resumeFile ? (
+              {docType === "resume" ? (
+                <Button type="button" variant="secondary" onClick={onAutofill} disabled={autofilling}>
+                  {autofilling ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                  Autofill
+                </Button>
+              ) : null}
+              {files[docType] ? (
                 <span className="text-xs text-muted-foreground">
                   <Upload className="mr-1 inline size-3" />
-                  {resumeFile.name} — attaches on save
+                  {files[docType]!.name}
                 </span>
               ) : null}
             </div>
+
+            {Object.keys(files).length ? (
+              <ul className="flex flex-col gap-1 rounded-md border bg-muted/30 p-2 text-xs">
+                {(Object.entries(files) as [DocumentType, File][]).map(([type, file]) => (
+                  <li key={type} className="flex items-center justify-between gap-2">
+                    <span className="truncate">
+                      <span className="text-muted-foreground">{documentTypeLabel(type)}:</span>{" "}
+                      {file.name}
+                      {type === "resume" && parsedData ? " (parsed)" : ""}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(type)}
+                      disabled={autofilling}
+                      aria-label={`Remove ${documentTypeLabel(type)}`}
+                      className="shrink-0 text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
             <p className="text-xs text-muted-foreground">
-              Upload a resume (.pdf, .docx, .txt) and click Autofill. The file and its parsed
-              details are saved with the candidate when you click Save.
+              Pick a document type, choose a file, and it attaches on Save. On the{" "}
+              <strong>Resume</strong> tab, click <strong>Autofill</strong> to fill the form from
+              the resume. All attached files are saved with the candidate.
             </p>
           </CardContent>
         </Card>
