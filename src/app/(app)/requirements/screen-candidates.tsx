@@ -25,6 +25,13 @@ export function ScreenCandidates({
   const router = useRouter();
 
   function run() {
+    // One Gemini call per candidate — confirm before spending the daily quota.
+    if (
+      !window.confirm(
+        "Score every candidate against this requirement? This runs one AI call per candidate and counts toward the daily quota.",
+      )
+    )
+      return;
     start(async () => {
       const res = await screenCandidatesAction(requirementId);
       if ("error" in res) {
