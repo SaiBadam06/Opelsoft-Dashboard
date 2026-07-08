@@ -127,12 +127,13 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
       const attached = Object.entries(files) as [DocumentType, File][];
       if (attached.length) {
         const supabase = createClient();
+        const uploadFailures: string[] = [];
         for (const [type, file] of attached) {
           const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
           const path = `${id}/${Date.now()}-${type}-${safeName}`; // type keeps paths unique per doc
           const up = await supabase.storage.from(DOCUMENT_BUCKET).upload(path, file);
           if (up.error) {
-            toast.error(`Candidate saved, but ${documentTypeLabel(type)} upload failed: ${up.error.message}`);
+            uploadFailures.push(documentTypeLabel(type));
             continue;
           }
           await recordDocument({
@@ -143,8 +144,19 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
             sizeBytes: file.size,
           });
         }
+        if (uploadFailures.length) {
+          toast.error(
+            `Candidate saved, but these uploads failed: ${uploadFailures.join(", ")}. Re-upload from the Documents tab.`,
+          );
+        }
         if (files.resume && parsedData) {
-          await saveResumeParseAction(id, parsedData.parsed, parsedData.githubRepos);
+          // Don't swallow the result: a failed persist means no skill-search row.
+          const parseRes = await saveResumeParseAction(id, parsedData.parsed, parsedData.githubRepos);
+          if (parseRes && "error" in parseRes) {
+            toast.error(
+              `Candidate saved, but parsed skills weren't stored (${parseRes.error}). They won't appear in skill search until you re-run Autofill.`,
+            );
+          }
         }
       }
       router.push(`/candidates/${id}`);

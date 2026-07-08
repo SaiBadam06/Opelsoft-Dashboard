@@ -34,6 +34,17 @@ export async function saveResumeParseAction(
 ) {
   const me = await getCurrentProfile();
   if (!me) return { error: "Not authorized" };
+
+  // parsed/githubRepos arrive from the client — guard shape and size before persisting.
+  // Skills are re-derived server-side below (not trusted from the client).
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return { error: "Invalid parse payload." };
+  }
+  const MAX_PAYLOAD_BYTES = 512 * 1024; // generous ceiling for one resume parse blob
+  if (JSON.stringify({ parsed, githubRepos }).length > MAX_PAYLOAD_BYTES) {
+    return { error: "Parse payload too large." };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.from("candidate_parsings").insert({
     candidate_id: candidateId,

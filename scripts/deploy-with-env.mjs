@@ -35,6 +35,8 @@ const SUPABASE_URL = local.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = local.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SMTP_USER = local.SMTP_USER;
 const SMTP_FROM = local.SMTP_FROM ?? local.SMTP_USER;
+const GEMINI_API_KEY = local.GEMINI_API_KEY; // resume autofill + skill inference
+const GITHUB_TOKEN = local.GITHUB_TOKEN; // optional: enriches GitHub repo data
 const SERVICE_NAME = "opelsoft-dashboard";
 const IMAGE_TAG = "latest";
 const IMAGE = `${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/opelsoft/${SERVICE_NAME}:${IMAGE_TAG}`;
@@ -49,6 +51,14 @@ for (const [key, val] of Object.entries({
     console.error(`Missing ${key} in .env.local`);
     process.exit(1);
   }
+}
+
+// Not hard-required (deploy still succeeds), but warn loudly: without it, prod
+// autofill and skill inference silently fail.
+if (!GEMINI_API_KEY) {
+  console.warn(
+    "WARNING: GEMINI_API_KEY missing in .env.local — resume autofill & skill inference will be disabled in production.",
+  );
 }
 
 function run(cmd, args) {
@@ -72,7 +82,7 @@ run("gcloud", [
   `_IMAGE=${IMAGE},_SUPABASE_URL=${SUPABASE_URL},_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY},_SITE_URL=${SITE_URL}`,
 ]);
 
-const envVars = [
+const envList = [
   `NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}`,
   `NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}`,
   `NEXT_PUBLIC_SITE_URL=${SITE_URL}`,
@@ -80,7 +90,12 @@ const envVars = [
   `DEFAULT_CAREER_SITE_SLUG=opelsoft`,
   `SMTP_USER=${SMTP_USER}`,
   `SMTP_FROM=${SMTP_FROM}`,
-].join(",");
+];
+// ponytail: passed as env vars from .env.local (like SMTP_USER). Promote to
+// --set-secrets (Secret Manager) if you want them out of the service config.
+if (GEMINI_API_KEY) envList.push(`GEMINI_API_KEY=${GEMINI_API_KEY}`);
+if (GITHUB_TOKEN) envList.push(`GITHUB_TOKEN=${GITHUB_TOKEN}`);
+const envVars = envList.join(",");
 
 run("gcloud", [
   "run",
