@@ -82,12 +82,18 @@ function Grid({ children }: { children: React.ReactNode }) {
   );
 }
 
+const TAB_VALUES = ["profile", "professional", "status", "timeline", "documents", "notes"];
+
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { id } = await params;
+  const { tab } = await searchParams;
+  const initialTab = tab && TAB_VALUES.includes(tab) ? tab : "profile";
   const me = await requireProfile();
   const candidate = await getCandidate(id);
   if (!candidate) notFound();
@@ -148,7 +154,7 @@ export default async function Page({
       ) : null}
 
       {/* Tabs */}
-      <Tabs defaultValue="profile">
+      <Tabs defaultValue={initialTab}>
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="professional">Professional</TabsTrigger>

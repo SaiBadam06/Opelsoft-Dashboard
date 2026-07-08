@@ -37,7 +37,7 @@ export async function saveResumeParseAction(
   const supabase = await createClient();
   const { error } = await supabase.from("candidate_parsings").insert({
     candidate_id: candidateId,
-    skills: normalizeSkills(parsed.skills ?? []),
+    skills: normalizeSkills([...(parsed.primary_skills ?? []), ...(parsed.secondary_skills ?? [])]),
     parsed,
     github_repos: githubRepos,
   });

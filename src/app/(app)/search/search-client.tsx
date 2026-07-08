@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Loader2, Search, Sparkles, X } from "lucide-react";
+import { ChevronDown, Loader2, Search, Sparkles, X } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,10 +20,12 @@ export function SearchClient() {
   const [title, setTitle] = useState("");
   const [inferring, setInferring] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [skills, setSkills] = useState<string[]>([]);
+  const [required, setRequired] = useState<string[]>([]);
+  const [niceToHave, setNiceToHave] = useState<string[]>([]);
   const [confirmed, setConfirmed] = useState(false); // skills step reached
   const [newSkill, setNewSkill] = useState("");
   const [results, setResults] = useState<SearchHit[] | null>(null);
+  const [openReason, setOpenReason] = useState<string | null>(null); // candidateId whose reasoning is shown
 
   async function onFindSkills() {
     if (!title.trim()) {
@@ -37,32 +40,32 @@ export function SearchClient() {
         toast.error(res.error);
         return;
       }
-      setSkills([...new Set([...res.required, ...res.niceToHave])]);
+      const req = [...new Set(res.required)];
+      setRequired(req);
+      // Drop nice-to-haves that duplicate a required skill.
+      setNiceToHave(res.niceToHave.filter((s) => !req.some((r) => r.toLowerCase() === s.toLowerCase())));
       setConfirmed(true);
     } finally {
       setInferring(false);
     }
   }
 
-  function removeSkill(s: string) {
-    setSkills((cur) => cur.filter((x) => x !== s));
-  }
-
   function addSkill() {
     const s = newSkill.trim();
     if (!s) return;
-    if (!skills.some((x) => x.toLowerCase() === s.toLowerCase())) setSkills((cur) => [...cur, s]);
+    const exists = [...required, ...niceToHave].some((x) => x.toLowerCase() === s.toLowerCase());
+    if (!exists) setRequired((cur) => [...cur, s]); // manual adds are treated as required
     setNewSkill("");
   }
 
   async function onSearch() {
-    if (skills.length === 0) {
+    if (required.length === 0 && niceToHave.length === 0) {
       toast.error("Add at least one skill.");
       return;
     }
     setSearching(true);
     try {
-      const res = await searchCandidatesAction(skills);
+      const res = await searchCandidatesAction(required, niceToHave);
       if ("error" in res) {
         toast.error(res.error);
         return;
@@ -99,34 +102,63 @@ export function SearchClient() {
       {confirmed ? (
         <Card>
           <CardHeader>
-            <CardTitle>Required skills</CardTitle>
+            <CardTitle>Skills</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <p className="text-sm text-muted-foreground">
-              This title needs these skills. Add or remove any, then search the bench.
+              Required skills set the match %. Nice-to-have skills are a bonus. Add or remove any,
+              then search the bench.
             </p>
-            <div className="flex flex-wrap gap-2">
-              {skills.length === 0 ? (
-                <span className="text-sm text-muted-foreground">No skills — add some below.</span>
-              ) : (
-                skills.map((s) => (
-                  <Badge key={s} variant="secondary" className="gap-1 py-1">
-                    {s}
-                    <button
-                      type="button"
-                      onClick={() => removeSkill(s)}
-                      className="rounded-full hover:text-destructive"
-                      aria-label={`Remove ${s}`}
-                    >
-                      <X className="size-3" />
-                    </button>
-                  </Badge>
-                ))
-              )}
+
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-medium text-muted-foreground">Required (primary)</span>
+              <div className="flex flex-wrap gap-2">
+                {required.length === 0 ? (
+                  <span className="text-sm text-muted-foreground">None — add some below.</span>
+                ) : (
+                  required.map((s) => (
+                    <Badge key={s} variant="secondary" className="gap-1 py-1">
+                      {s}
+                      <button
+                        type="button"
+                        onClick={() => setRequired((cur) => cur.filter((x) => x !== s))}
+                        className="rounded-full hover:text-destructive"
+                        aria-label={`Remove ${s}`}
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </Badge>
+                  ))
+                )}
+              </div>
             </div>
+
+            {niceToHave.length ? (
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Nice-to-have (secondary)
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {niceToHave.map((s) => (
+                    <Badge key={s} variant="outline" className="gap-1 py-1">
+                      {s}
+                      <button
+                        type="button"
+                        onClick={() => setNiceToHave((cur) => cur.filter((x) => x !== s))}
+                        className="rounded-full hover:text-destructive"
+                        aria-label={`Remove ${s}`}
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             <div className="flex flex-wrap items-center gap-3">
               <Input
-                placeholder="Add a skill"
+                placeholder="Add a required skill"
                 value={newSkill}
                 onChange={(e) => setNewSkill(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
@@ -163,13 +195,43 @@ export function SearchClient() {
                     <Link href={`/candidates/${r.candidateId}`} className="font-medium hover:underline">
                       {r.name}
                     </Link>
-                    <Badge variant="outline">{r.overlapPct}% match</Badge>
+                    {r.aiReason ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOpenReason((cur) => (cur === r.candidateId ? null : r.candidateId))
+                        }
+                        title="Click for match reasoning"
+                        aria-expanded={openReason === r.candidateId}
+                      >
+                        <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+                          {r.overlapPct}% match
+                          <ChevronDown
+                            className={cn(
+                              "size-3 transition-transform",
+                              openReason === r.candidateId && "rotate-180",
+                            )}
+                          />
+                        </Badge>
+                      </button>
+                    ) : (
+                      <Badge variant="outline">{r.overlapPct}% match</Badge>
+                    )}
                   </div>
-                  {r.aiReason ? <p className="text-sm text-muted-foreground">{r.aiReason}</p> : null}
+                  {openReason === r.candidateId && r.aiReason ? (
+                    <p className="rounded-md bg-muted/50 p-2 text-sm text-muted-foreground">
+                      {r.aiReason}
+                    </p>
+                  ) : null}
                   <div className="flex flex-wrap gap-1">
                     {r.matched.map((s) => (
                       <Badge key={s} className="bg-emerald-600/15 text-emerald-700 dark:text-emerald-400">
                         {s}
+                      </Badge>
+                    ))}
+                    {r.bonusMatched.map((s) => (
+                      <Badge key={s} className="bg-sky-600/15 text-sky-700 dark:text-sky-400">
+                        +{s}
                       </Badge>
                     ))}
                     {r.missing.map((s) => (
