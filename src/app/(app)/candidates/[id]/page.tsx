@@ -10,6 +10,8 @@ import {
 } from "@/lib/candidates";
 import { listNotes } from "@/lib/notes";
 import { listActivityLogs } from "@/lib/activity";
+import { listCandidateScreenings } from "@/lib/screenings";
+import { requirementOptions } from "@/lib/requirements";
 import {
   statusLabel,
   statusBadgeClass,
@@ -31,6 +33,7 @@ import {
   DeleteCandidateButton,
 } from "../reassign-control";
 import { DocumentsTab } from "@/app/(app)/candidates/documents-tab";
+import { CandidateScreenings } from "../candidate-screenings";
 import { NotesSection } from "@/components/shared/notes-section";
 import { ActivityLogSection } from "@/components/shared/activity-log-section";
 
@@ -93,11 +96,14 @@ export default async function Page({
   if (!candidate) notFound();
 
   const c: Candidate = candidate;
-  const [documents, notes, activityLogs] = await Promise.all([
-    listDocuments(id),
-    listNotes("candidate", id),
-    listActivityLogs("candidate", id),
-  ]);
+  const [documents, notes, activityLogs, fitScores, requirements] =
+    await Promise.all([
+      listDocuments(id),
+      listNotes("candidate", id),
+      listActivityLogs("candidate", id),
+      listCandidateScreenings(id),
+      requirementOptions(),
+    ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -152,6 +158,7 @@ export default async function Page({
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="professional">Professional</TabsTrigger>
+          <TabsTrigger value="fit">Fit</TabsTrigger>
           <TabsTrigger value="status">Status</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -225,6 +232,21 @@ export default async function Page({
                   <Text value={c.preferred_location} />
                 </Field>
               </Grid>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="fit">
+          <Card>
+            <CardHeader>
+              <CardTitle>Requirement fit (ATS)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CandidateScreenings
+                candidateId={id}
+                screenings={fitScores}
+                requirements={requirements}
+              />
             </CardContent>
           </Card>
         </TabsContent>

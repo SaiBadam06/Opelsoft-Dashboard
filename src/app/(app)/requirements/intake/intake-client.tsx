@@ -408,9 +408,9 @@ function ReviewForm({
 
           {showAddVendor ? (
             <div className="space-y-2 rounded-lg border border-dashed border-input bg-muted/30 p-3">
-              <p className="text-xs font-medium text-warning-foreground">
-                “{values.vendor_name}” isn’t in your vendor list. Confirm the
-                details and tick the box to add it.
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                “{values.vendor_name}” isn’t in your vendor list. It’ll be added
+                with the details below — untick to skip.
               </p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <div>
@@ -427,7 +427,7 @@ function ReviewForm({
                 </div>
               </div>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="add_vendor" value="on" className="size-4 accent-primary" />
+                <input type="checkbox" name="add_vendor" value="on" defaultChecked className="size-4 accent-primary" />
                 Add this vendor to my list with the details above
               </label>
               <p className="text-xs text-muted-foreground">
@@ -524,7 +524,7 @@ function ReviewForm({
 
           {duplicate ? (
             <div className="rounded-lg border border-warning/40 bg-warning/10 p-3">
-              <p className="flex items-center gap-2 text-sm font-medium text-warning-foreground">
+              <p className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400">
                 <AlertTriangle className="size-4" />
                 Possible duplicate
               </p>
