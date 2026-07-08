@@ -4,10 +4,66 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
+import type { VendorOption } from "@/lib/vendors";
 
 function str(fd: FormData, k: string): string | null {
   const v = String(fd.get(k) ?? "").trim();
   return v === "" ? null : v;
+}
+
+function validEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+export async function createVendorForCombobox(input: {
+  vendorName: string;
+  company: string;
+  email: string;
+}): Promise<{ vendor?: VendorOption; error?: string; duplicate?: boolean }> {
+  const me = await getCurrentProfile();
+  if (!me) return { error: "Not authorized" };
+
+  const vendorName = input.vendorName.trim();
+  const company = input.company.trim();
+  const email = input.email.trim();
+
+  if (!vendorName) return { error: "Vendor / Client Name is required." };
+  if (!company) return { error: "Company is required." };
+  if (!email) return { error: "Email is required." };
+  if (!validEmail(email)) {
+    return { error: "Please enter a valid email address." };
+  }
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("vendors")
+    .select("id, name, contact_name, email")
+    .or(
+      `email.ilike.${email},name.ilike.${company},contact_name.ilike.${vendorName}`,
+    )
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    return { vendor: existing as VendorOption, duplicate: true };
+  }
+
+  const { data, error } = await supabase
+    .from("vendors")
+    .insert({
+      name: company,
+      contact_name: vendorName,
+      email,
+      created_by: me.id,
+    })
+    .select("id, name, contact_name, email")
+    .single();
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/vendors");
+  revalidatePath("/submissions/new");
+  return { vendor: data as VendorOption };
 }
 
 export async function createVendor(_prev: unknown, fd: FormData) {

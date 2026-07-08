@@ -11,6 +11,8 @@ export interface Vendor {
   updated_at: string;
 }
 
+export type VendorOption = Pick<Vendor, "id" | "name" | "contact_name" | "email">;
+
 const COLUMNS =
   "id, name, contact_name, email, phone, notes, created_at, updated_at";
 
@@ -33,8 +35,13 @@ export async function getVendor(id: string): Promise<Vendor | null> {
   return (data as Vendor | null) ?? null;
 }
 
-// Lightweight {id,name} list for select inputs.
-export async function vendorOptions(): Promise<{ id: string; name: string }[]> {
+// Lightweight list for select and combobox inputs.
+export async function vendorOptions(): Promise<VendorOption[]> {
   const vendors = await listVendors();
-  return vendors.map((v) => ({ id: v.id, name: v.name }));
+  return vendors.map((v) => ({
+    id: v.id,
+    name: v.name,
+    contact_name: v.contact_name,
+    email: v.email,
+  }));
 }
