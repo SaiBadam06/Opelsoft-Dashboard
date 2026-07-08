@@ -63,6 +63,9 @@ gcloud secrets create opelsoft-service-role --data-file=sr.txt ; Remove-Item sr.
 
 "YOUR_SMTP_APP_PASSWORD" | Out-File -NoNewline -Encoding ascii smtp.txt
 gcloud secrets create opelsoft-smtp-pass --data-file=smtp.txt ; Remove-Item smtp.txt
+
+"YOUR_GEMINI_API_KEY" | Out-File -NoNewline -Encoding ascii gemini.txt
+gcloud secrets create opelsoft-gemini-key --data-file=gemini.txt ; Remove-Item gemini.txt
 ```
 
 ## 4. Let Cloud Run read those secrets
@@ -76,6 +79,7 @@ Take the number it prints, then (`PROJECT_NUMBER` = that value):
 ```sh
 gcloud secrets add-iam-policy-binding opelsoft-service-role --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" --role="roles/secretmanager.secretAccessor"
 gcloud secrets add-iam-policy-binding opelsoft-smtp-pass --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" --role="roles/secretmanager.secretAccessor"
+gcloud secrets add-iam-policy-binding opelsoft-gemini-key --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" --role="roles/secretmanager.secretAccessor"
 ```
 
 ## 5. Build and push the image
@@ -87,7 +91,7 @@ gcloud builds submit --config cloudbuild.yaml --substitutions=_IMAGE=REGION-dock
 ## 6. Deploy to Cloud Run
 
 ```sh
-gcloud run deploy opelsoft-dashboard --image REGION-docker.pkg.dev/PROJECT_ID/opelsoft/opelsoft-dashboard:latest --region REGION --no-invoker-iam-check --port 8080 --memory 1Gi --max-instances 3 --set-env-vars "NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co,NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY,NEXT_PUBLIC_SITE_URL=https://YOUR-SERVICE-URL,SITE_URL=https://YOUR-SERVICE-URL,SMTP_USER=you@opelsoft.com,SMTP_FROM=you@opelsoft.com" --set-secrets "SUPABASE_SERVICE_ROLE_KEY=opelsoft-service-role:latest,SMTP_PASS=opelsoft-smtp-pass:latest"
+gcloud run deploy opelsoft-dashboard --image REGION-docker.pkg.dev/PROJECT_ID/opelsoft/opelsoft-dashboard:latest --region REGION --no-invoker-iam-check --port 8080 --memory 1Gi --max-instances 3 --set-env-vars "NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co,NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY,NEXT_PUBLIC_SITE_URL=https://YOUR-SERVICE-URL,SITE_URL=https://YOUR-SERVICE-URL,SMTP_USER=you@opelsoft.com,SMTP_FROM=you@opelsoft.com" --set-secrets "SUPABASE_SERVICE_ROLE_KEY=opelsoft-service-role:latest,SMTP_PASS=opelsoft-smtp-pass:latest,GEMINI_API_KEY=opelsoft-gemini-key:latest"
 ```
 
 This prints a **Service URL** like `https://opelsoft-dashboard-xxxx.REGION.run.app`.
@@ -108,7 +112,15 @@ Login, invites, and password setup links won't work until this is done.
 ## 8. Database
 
 The Cloud Run app talks to the same Supabase project as your `.env.local`. Apply
-migrations `0001`–`0006` in the SQL Editor, then `npm run seed` / `npm run seed:all`.
+**all** migrations under `supabase/migrations/` (through `0016`) in the SQL Editor,
+then `npm run seed` / `npm run seed:all`.
+
+The AI features (requirement email intake, ATS scoring) additionally require:
+- `GEMINI_API_KEY` — stored as the `opelsoft-gemini-key` secret (steps 3–4) and
+  injected via `--set-secrets` (step 6 / the deploy scripts).
+- migrations `0014` (requirement intake columns), `0015` (`candidate_screenings`
+  table) and `0016` (its RLS) applied **before** deploying app code, or intake
+  saves and screening upserts will fail.
 
 ---
 

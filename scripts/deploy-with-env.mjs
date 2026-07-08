@@ -102,7 +102,7 @@ run("gcloud", [
   "--set-env-vars",
   envVars,
   "--set-secrets",
-  "SUPABASE_SERVICE_ROLE_KEY=opelsoft-service-role:latest,SMTP_PASS=opelsoft-smtp-pass:latest",
+  "SUPABASE_SERVICE_ROLE_KEY=opelsoft-service-role:latest,SMTP_PASS=opelsoft-smtp-pass:latest,GEMINI_API_KEY=opelsoft-gemini-key:latest",
 ]);
 
 console.log(`\nDeployed: ${SITE_URL}`);
