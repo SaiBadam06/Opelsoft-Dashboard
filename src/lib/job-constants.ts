@@ -14,10 +14,18 @@ export type SubmissionStatus =
   | "placed";
 export type PrimeLayer = "prime" | "layer";
 
+export type WorkMode = "remote" | "hybrid" | "onsite";
+
 export interface Opt<T extends string> {
   value: T;
   label: string;
 }
+
+export const WORK_MODES: Opt<WorkMode>[] = [
+  { value: "remote", label: "Remote" },
+  { value: "hybrid", label: "Hybrid" },
+  { value: "onsite", label: "Onsite" },
+];
 
 export const REQUIREMENT_PRIORITIES: Opt<RequirementPriority>[] = [
   { value: "low", label: "Low" },
