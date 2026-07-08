@@ -51,7 +51,7 @@ gcloud run deploy "${SERVICE_NAME}" \
   --memory 1Gi \
   --max-instances 3 \
   --set-env-vars "${ENV_VARS}" \
-  --set-secrets "SUPABASE_SERVICE_ROLE_KEY=opelsoft-service-role:latest,SMTP_PASS=opelsoft-smtp-pass:latest"
+  --set-secrets "SUPABASE_SERVICE_ROLE_KEY=opelsoft-service-role:latest,SMTP_PASS=opelsoft-smtp-pass:latest,GEMINI_API_KEY=opelsoft-gemini-key:latest"
 
 echo "==> Deployed. Service URL should match SITE_URL: ${SITE_URL}"
 echo "    Verify Supabase Auth → URL Configuration uses this URL."
