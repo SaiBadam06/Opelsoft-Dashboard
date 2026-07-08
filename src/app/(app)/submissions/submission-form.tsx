@@ -17,6 +17,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import type { VendorOption } from "@/lib/vendors";
+import { VendorCombobox } from "./vendor-combobox";
 
 const selectClassName = "h-9 rounded-md border bg-background px-3 text-sm";
 
@@ -30,7 +32,7 @@ export function SubmissionForm({
 }: {
   candidates: { id: string; full_name: string }[];
   requirements: { id: string; title: string }[];
-  vendors: { id: string; name: string }[];
+  vendors: VendorOption[];
   today: string;
   defaultCandidateId?: string;
   defaultRequirementId?: string;
@@ -83,20 +85,8 @@ export function SubmissionForm({
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="vendor_id">Vendor</Label>
-            <select
-              id="vendor_id"
-              name="vendor_id"
-              className={selectClassName}
-              defaultValue=""
-            >
-              <option value="" />
-              {vendors.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
+            <Label htmlFor="vendor_search">Vendor</Label>
+            <VendorCombobox vendors={vendors} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="end_client">End client</Label>
