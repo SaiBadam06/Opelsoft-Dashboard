@@ -15,7 +15,6 @@ import type { SubmissionRow } from "@/lib/submissions";
 import { PRIME_LAYERS } from "@/lib/job-constants";
 import { deleteSubmission } from "@/app/(app)/submissions/actions";
 import { SubmissionStatusSelect } from "./submission-status-select";
-import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
