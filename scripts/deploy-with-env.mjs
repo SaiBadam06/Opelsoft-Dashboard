@@ -35,6 +35,7 @@ const SUPABASE_URL = local.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = local.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SMTP_USER = local.SMTP_USER;
 const SMTP_FROM = local.SMTP_FROM ?? local.SMTP_USER;
+const GITHUB_TOKEN = local.GITHUB_TOKEN; // optional: enriches GitHub repo data
 const SERVICE_NAME = "opelsoft-dashboard";
 const IMAGE_TAG = "latest";
 const IMAGE = `${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/opelsoft/${SERVICE_NAME}:${IMAGE_TAG}`;
@@ -72,7 +73,7 @@ run("gcloud", [
   `_IMAGE=${IMAGE},_SUPABASE_URL=${SUPABASE_URL},_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY},_SITE_URL=${SITE_URL}`,
 ]);
 
-const envVars = [
+const envList = [
   `NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}`,
   `NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}`,
   `NEXT_PUBLIC_SITE_URL=${SITE_URL}`,
@@ -80,7 +81,10 @@ const envVars = [
   `DEFAULT_CAREER_SITE_SLUG=opelsoft`,
   `SMTP_USER=${SMTP_USER}`,
   `SMTP_FROM=${SMTP_FROM}`,
-].join(",");
+];
+// Optional GitHub token for resume enrichment rate limits (plain env; not a secret today).
+if (GITHUB_TOKEN) envList.push(`GITHUB_TOKEN=${GITHUB_TOKEN}`);
+const envVars = envList.join(",");
 
 run("gcloud", [
   "run",
@@ -101,6 +105,7 @@ run("gcloud", [
   "3",
   "--set-env-vars",
   envVars,
+  // GEMINI_API_KEY comes from Secret Manager only (avoid duplicate env+secret binding).
   "--set-secrets",
   "SUPABASE_SERVICE_ROLE_KEY=opelsoft-service-role:latest,SMTP_PASS=opelsoft-smtp-pass:latest,GEMINI_API_KEY=opelsoft-gemini-key:latest",
 ]);

@@ -15,6 +15,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", minRole: "any" },
   { label: "Candidates", href: "/candidates", minRole: "any" },
+  { label: "Skill Search", href: "/search", minRole: "any" },
   { label: "Pipeline", href: "/pipeline", minRole: "any" },
   { label: "Requirements", href: "/requirements", minRole: "any" },
   { label: "Applications", href: "/applications", minRole: "any" },

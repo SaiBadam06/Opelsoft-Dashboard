@@ -1,18 +1,31 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, Search, Users } from "lucide-react";
+import { Check, ChevronDown, FileText, Loader2, Search, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import type { Candidate, CoordinatorOption } from "@/lib/candidates";
 import { stageLabel } from "@/lib/candidate-constants";
 import { cn } from "@/lib/utils";
-import { reassignCandidate } from "./actions";
+import { reassignCandidate, deleteCandidate } from "./actions";
 import { StatusSelect } from "./status-select";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -99,6 +112,71 @@ function CoordinatorSelect({
   );
 }
 
+// Per-row quick actions: jump to the candidate's docs, or delete the candidate.
+// stopPropagation keeps clicks off the row's navigate-to-detail handler.
+function RowActions({ id, name }: { id: string; name: string }) {
+  const [pending, startTransition] = useTransition();
+
+  function onDelete() {
+    startTransition(async () => {
+      // deleteCandidate revalidates /candidates and redirects; only returns on error.
+      const res = await deleteCandidate(id);
+      if (res && "error" in res) toast.error(res.error);
+    });
+  }
+
+  return (
+    <div
+      className="flex items-center justify-end gap-1"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <Button
+        variant="ghost"
+        size="icon"
+        title="Documents"
+        aria-label={`Documents for ${name}`}
+        render={<Link href={`/candidates/${id}?tab=documents`} />}
+      >
+        <FileText />
+      </Button>
+      <AlertDialog>
+        <AlertDialogTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive"
+              title="Delete"
+              aria-label={`Delete ${name}`}
+            >
+              <Trash2 />
+            </Button>
+          }
+        />
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete candidate?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes “{name}”. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={pending}
+              onClick={onDelete}
+              className={cn("bg-destructive text-white hover:bg-destructive/90")}
+            >
+              {pending ? <Loader2 className="animate-spin" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 function matches(c: Candidate, q: string): boolean {
   const haystack = [
     c.full_name,
@@ -169,13 +247,14 @@ export function CandidatesTable({
               <TableHead>Coordinator</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Stage</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="py-10 text-center text-muted-foreground"
                 >
                   No matches
@@ -233,6 +312,9 @@ export function CandidatesTable({
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {stageLabel(c.pipeline_stage)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <RowActions id={c.id} name={c.full_name} />
                   </TableCell>
                 </TableRow>
               ))

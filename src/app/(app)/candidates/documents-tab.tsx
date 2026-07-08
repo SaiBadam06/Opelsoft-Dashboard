@@ -35,6 +35,7 @@ import {
   deleteDocument,
   getDocumentUrl,
 } from "@/app/(app)/candidates/document-actions";
+import { DocumentTypeBar } from "@/app/(app)/candidates/document-type-bar";
 
 export function DocumentsTab({
   candidateId,
@@ -47,6 +48,9 @@ export function DocumentsTab({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [type, setType] = useState<DocumentType>(DOCUMENT_TYPES[0].value);
   const [uploading, setUploading] = useState(false);
+
+  // The bar is a folder selector: show only the active folder's files.
+  const visible = documents.filter((d) => d.type === type);
 
   async function onUpload() {
     const file = fileInputRef.current?.files?.[0];
@@ -93,42 +97,33 @@ export function DocumentsTab({
     <Card>
       <CardContent className="flex flex-col gap-6">
         {/* Upload row */}
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as DocumentType)}
-            disabled={uploading}
-            className="h-9 rounded-md border bg-background px-3 text-sm"
-          >
-            {DOCUMENT_TYPES.map((d) => (
-              <option key={d.value} value={d.value}>
-                {d.label}
-              </option>
-            ))}
-          </select>
-          <Input
-            ref={fileInputRef}
-            type="file"
-            disabled={uploading}
-            className="w-full sm:w-auto"
-          />
-          <Button onClick={onUpload} disabled={uploading}>
-            {uploading ? <Loader2 className="animate-spin" /> : <Upload />}
-            Upload
-          </Button>
+        <div className="flex flex-col gap-3">
+          <DocumentTypeBar value={type} onChange={setType} disabled={uploading} />
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              ref={fileInputRef}
+              type="file"
+              disabled={uploading}
+              className="w-full sm:w-auto"
+            />
+            <Button onClick={onUpload} disabled={uploading}>
+              {uploading ? <Loader2 className="animate-spin" /> : <Upload />}
+              Upload
+            </Button>
+          </div>
         </div>
 
-        {/* Document list */}
-        {documents.length === 0 ? (
+        {/* Document list — scoped to the selected folder */}
+        {visible.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-8 text-center">
             <FileText className="size-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              No documents yet — upload a resume or certificate above.
+              No {documentTypeLabel(type)} files yet — upload one above.
             </p>
           </div>
         ) : (
           <ul className="flex flex-col gap-2">
-            {documents.map((doc) => (
+            {visible.map((doc) => (
               <DocumentRow key={doc.id} candidateId={candidateId} doc={doc} />
             ))}
           </ul>
