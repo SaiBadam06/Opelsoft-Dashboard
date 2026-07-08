@@ -60,6 +60,14 @@ function vendorMatchScore(vendor: VendorOption, query: string): number {
   return -1;
 }
 
+function hasExactVendorMatch(vendors: VendorOption[], query: string): boolean {
+  return vendors.some((vendor) =>
+    [vendorLabel(vendor), vendor.name].some(
+      (field) => normalized(field) === query,
+    ),
+  );
+}
+
 export function VendorCombobox({
   vendors,
 }: {
@@ -82,7 +90,7 @@ export function VendorCombobox({
   const normalizedQuery = normalized(trimmedQuery);
   const canSearch = normalizedQuery.length > 0;
   const displayedResults = useMemo(() => {
-    if (!canSearch) return [];
+    if (!canSearch) return knownVendors;
 
     return knownVendors
       .map((vendor) => ({
@@ -100,9 +108,10 @@ export function VendorCombobox({
     () => knownVendors.find((vendor) => vendor.id === selectedId),
     [knownVendors, selectedId],
   );
-  const showDropdown = open && canSearch;
-  const showAddVendorOption = displayedResults.length === 0;
-  const addVendorOptionIndex = 0;
+  const showDropdown = open;
+  const showAddVendorOption =
+    canSearch && !hasExactVendorMatch(knownVendors, normalizedQuery);
+  const addVendorOptionIndex = displayedResults.length;
 
   function selectVendor(vendor: VendorOption) {
     setSelectedId(vendor.id);
@@ -122,7 +131,9 @@ export function VendorCombobox({
   }
 
   function moveActiveIndex(direction: 1 | -1) {
-    const optionCount = showAddVendorOption ? 1 : displayedResults.length;
+    const optionCount = displayedResults.length + (showAddVendorOption ? 1 : 0);
+    if (optionCount === 0) return;
+
     setActiveIndex(
       (current) => (current + direction + optionCount) % optionCount,
     );
