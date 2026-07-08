@@ -49,6 +49,9 @@ export function DocumentsTab({
   const [type, setType] = useState<DocumentType>(DOCUMENT_TYPES[0].value);
   const [uploading, setUploading] = useState(false);
 
+  // The bar is a folder selector: show only the active folder's files.
+  const visible = documents.filter((d) => d.type === type);
+
   async function onUpload() {
     const file = fileInputRef.current?.files?.[0];
     if (!file) {
@@ -110,17 +113,17 @@ export function DocumentsTab({
           </div>
         </div>
 
-        {/* Document list */}
-        {documents.length === 0 ? (
+        {/* Document list — scoped to the selected folder */}
+        {visible.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-8 text-center">
             <FileText className="size-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              No documents yet — upload a resume or certificate above.
+              No {documentTypeLabel(type)} files yet — upload one above.
             </p>
           </div>
         ) : (
           <ul className="flex flex-col gap-2">
-            {documents.map((doc) => (
+            {visible.map((doc) => (
               <DocumentRow key={doc.id} candidateId={candidateId} doc={doc} />
             ))}
           </ul>

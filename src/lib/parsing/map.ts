@@ -9,7 +9,12 @@ export function parsedToFields(p: ParsedResume): Record<string, string> {
   return {
     full_name: p.candidate_name ?? "",
     email: p.email ?? "",
-    primary_skills: (p.skills ?? []).join(", "),
+    phone: p.phone ?? "",
+    location: p.location ?? "",
+    current_company: p.current_company ?? "",
+    experience_years: p.experience_years ? String(p.experience_years) : "", // 0/blank → leave for manual entry
+    primary_skills: (p.primary_skills ?? []).join(", "),
+    secondary_skills: (p.secondary_skills ?? []).join(", "),
     education: (p.education ?? []).join("; "),
     projects,
     github: (p.github_urls ?? [])[0] ?? "",
