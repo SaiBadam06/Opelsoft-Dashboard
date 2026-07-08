@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
+  Search,
   KanbanSquare,
   Briefcase,
   Inbox,
@@ -37,6 +38,7 @@ import {
 const ICON_MAP: Record<string, LucideIcon> = {
   "/dashboard": LayoutDashboard,
   "/candidates": Users,
+  "/search": Search,
   "/pipeline": KanbanSquare,
   "/requirements": Briefcase,
   "/applications": Inbox,

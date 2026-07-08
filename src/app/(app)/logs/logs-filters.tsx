@@ -70,8 +70,8 @@ export function LogsFilters({
   };
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-      <div className="flex-1 space-y-1.5">
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+      <div className="min-w-[160px] flex-1 space-y-1.5">
         <label className="text-xs font-medium text-muted-foreground">
           {entityLabel}
         </label>
@@ -79,7 +79,7 @@ export function LogsFilters({
           value={searchParams.get("entity_id") || "all"}
           onValueChange={(val) => handleFilter("entity_id", val)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="h-9 w-full">
             <SelectValue placeholder={`All ${entityLabel.toLowerCase()}s`} />
           </SelectTrigger>
           <SelectContent>
@@ -93,7 +93,7 @@ export function LogsFilters({
         </Select>
       </div>
 
-      <div className="flex-1 space-y-1.5">
+      <div className="min-w-[160px] flex-1 space-y-1.5">
         <label className="text-xs font-medium text-muted-foreground">
           Action
         </label>
@@ -101,7 +101,7 @@ export function LogsFilters({
           value={searchParams.get("action") || "all"}
           onValueChange={(val) => handleFilter("action", val)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="h-9 w-full">
             <SelectValue placeholder="All actions" />
           </SelectTrigger>
           <SelectContent>
@@ -115,33 +115,37 @@ export function LogsFilters({
         </Select>
       </div>
 
-      <div className="flex-1 space-y-1.5">
+      <div className="min-w-[160px] flex-1 space-y-1.5">
         <label className="text-xs font-medium text-muted-foreground">
           From Date
         </label>
         <Input
           type="date"
+          className="h-9 w-full"
           value={searchParams.get("from") || ""}
           onChange={(e) => handleFilter("from", e.target.value)}
         />
       </div>
 
-      <div className="flex-1 space-y-1.5">
+      <div className="min-w-[160px] flex-1 space-y-1.5">
         <label className="text-xs font-medium text-muted-foreground">
           To Date
         </label>
         <Input
           type="date"
+          className="h-9 w-full"
           value={searchParams.get("to") || ""}
           onChange={(e) => handleFilter("to", e.target.value)}
         />
       </div>
 
-      <div className="pb-[1px]">
-        <Button variant="outline" onClick={handleClear} className="w-full sm:w-auto">
-          Clear Filters
-        </Button>
-      </div>
+      <Button
+        variant="outline"
+        onClick={handleClear}
+        className="h-9 w-full sm:w-auto"
+      >
+        Clear Filters
+      </Button>
     </div>
   );
 }
