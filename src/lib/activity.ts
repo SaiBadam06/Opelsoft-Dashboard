@@ -20,7 +20,9 @@ export type EntityType = "candidate" | "requirement" | "submission" | "vendor";
 type ActivityLogRow = ActivityLog & {
   candidates?: { full_name: string } | null;
   requirements?: { title: string } | null;
-  submissions?: { candidates: { full_name: string } | null } | null;
+  submissions?: {
+    candidates: { full_name: string } | { full_name: string }[] | null;
+  } | null;
   vendors?: { name: string } | null;
 };
 
@@ -115,7 +117,9 @@ function getEntityName(entityType: EntityType, row: ActivityLogRow): string | nu
     case "requirement":
       return row.requirements?.title ?? null;
     case "submission":
-      return row.submissions?.candidates?.full_name ?? null;
+      return row.submissions?.candidates
+        ? candidateJoinName(row.submissions.candidates)
+        : null;
     case "vendor":
       return row.vendors?.name ?? null;
   }
@@ -150,12 +154,22 @@ export async function listGlobalActivityLogs(
   const { data, error } = await query;
   if (error) return { logs: [], error: error.message };
 
-  const logs = ((data as ActivityLogRow[] | null) ?? []).map((row) => ({
-    ...row,
-    entity_name: getEntityName(entityType, row),
-  }));
+  const logs = ((data as unknown as ActivityLogRow[] | null) ?? []).map(
+    (row) => ({
+      ...row,
+      entity_name: getEntityName(entityType, row),
+    }),
+  );
 
   return { logs, error: null };
+}
+
+function candidateJoinName(
+  candidates: { full_name: string } | { full_name: string }[] | null,
+): string {
+  if (!candidates) return "Unknown";
+  if (Array.isArray(candidates)) return candidates[0]?.full_name ?? "Unknown";
+  return candidates.full_name;
 }
 
 export async function getGlobalLogOptions(entityType: EntityType): Promise<{
@@ -193,8 +207,9 @@ export async function getGlobalLogOptions(entityType: EntityType): Promise<{
       .order("created_at", { ascending: false });
     entities = (data ?? []).map((d) => ({
       id: d.id,
-      name:
-        (d.candidates as { full_name: string } | null)?.full_name ?? "Unknown",
+      name: candidateJoinName(
+        d.candidates as { full_name: string } | { full_name: string }[] | null,
+      ),
     }));
   } else if (entityType === "vendor") {
     const { data } = await supabase

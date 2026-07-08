@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Mail } from "lucide-react";
 
 import { requireProfile } from "@/lib/auth";
 import { listRequirements } from "@/lib/requirements";
@@ -19,10 +19,19 @@ export default async function RequirementsPage() {
             Open roles from your vendors
           </p>
         </div>
-        <Button render={<Link href="/requirements/new" />}>
-          <Plus />
-          Add requirement
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            render={<Link href="/requirements/intake" />}
+          >
+            <Mail />
+            Intake from email
+          </Button>
+          <Button render={<Link href="/requirements/new" />}>
+            <Plus />
+            Add requirement
+          </Button>
+        </div>
       </div>
 
       <RequirementsTable requirements={reqs} isAdmin={me.role === "admin"} />
