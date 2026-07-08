@@ -16,44 +16,67 @@ function validEmail(value: string): boolean {
 }
 
 export async function createVendorForCombobox(input: {
-  vendorName: string;
-  company: string;
+  name: string;
+  contactName: string;
   email: string;
+  phone: string;
 }): Promise<{ vendor?: VendorOption; error?: string; duplicate?: boolean }> {
   const me = await getCurrentProfile();
   if (!me) return { error: "Not authorized" };
 
-  const vendorName = input.vendorName.trim();
-  const company = input.company.trim();
+  const name = input.name.trim();
+  const contactName = input.contactName.trim();
   const email = input.email.trim();
+  const phone = input.phone.trim();
 
-  if (!vendorName) return { error: "Vendor / Client Name is required." };
-  if (!company) return { error: "Company is required." };
-  if (!email) return { error: "Email is required." };
-  if (!validEmail(email)) {
+  if (!name) return { error: "Name is required." };
+  if (email && !validEmail(email)) {
     return { error: "Please enter a valid email address." };
   }
 
   const supabase = await createClient();
-  const { data: existing } = await supabase
+  if (email) {
+    const { data: existingByEmail } = await supabase
+      .from("vendors")
+      .select("id, name, contact_name, email")
+      .eq("email", email)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingByEmail) {
+      return { vendor: existingByEmail as VendorOption, duplicate: true };
+    }
+  }
+
+  const existingByNameAndContactQuery = supabase
     .from("vendors")
     .select("id, name, contact_name, email")
-    .or(
-      `email.ilike.${email},name.ilike.${company},contact_name.ilike.${vendorName}`,
-    )
-    .limit(1)
-    .maybeSingle();
+    .eq("name", name);
 
-  if (existing) {
-    return { vendor: existing as VendorOption, duplicate: true };
+  const { data: existingByNameAndContact } = contactName
+    ? await existingByNameAndContactQuery
+        .eq("contact_name", contactName)
+        .limit(1)
+        .maybeSingle()
+    : await existingByNameAndContactQuery
+        .is("contact_name", null)
+        .limit(1)
+        .maybeSingle();
+
+  if (existingByNameAndContact) {
+    return {
+      vendor: existingByNameAndContact as VendorOption,
+      duplicate: true,
+    };
   }
 
   const { data, error } = await supabase
     .from("vendors")
     .insert({
-      name: company,
-      contact_name: vendorName,
-      email,
+      name,
+      contact_name: contactName || null,
+      email: email || null,
+      phone: phone || null,
       created_by: me.id,
     })
     .select("id, name, contact_name, email")

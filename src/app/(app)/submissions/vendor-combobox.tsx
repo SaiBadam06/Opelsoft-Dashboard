@@ -20,8 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 type VendorFormErrors = Partial<{
-  vendorName: string;
-  company: string;
+  name: string;
   email: string;
   form: string;
 }>;
@@ -72,9 +71,10 @@ export function VendorCombobox({
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [vendorName, setVendorName] = useState("");
-  const [company, setCompany] = useState("");
+  const [name, setName] = useState("");
+  const [contactName, setContactName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [formErrors, setFormErrors] = useState<VendorFormErrors>({});
   const [pending, startTransition] = useTransition();
 
@@ -112,9 +112,10 @@ export function VendorCombobox({
   }
 
   function openAddVendor() {
-    setVendorName(trimmedQuery);
-    setCompany("");
+    setName(trimmedQuery);
+    setContactName("");
     setEmail("");
+    setPhone("");
     setFormErrors({});
     setDialogOpen(true);
     setOpen(false);
@@ -166,15 +167,10 @@ export function VendorCombobox({
   function validateModal(): VendorFormErrors {
     const errors: VendorFormErrors = {};
 
-    if (!vendorName.trim()) {
-      errors.vendorName = "Vendor Name is required.";
+    if (!name.trim()) {
+      errors.name = "Name is required.";
     }
-    if (!company.trim()) {
-      errors.company = "Company is required.";
-    }
-    if (!email.trim()) {
-      errors.email = "Email is required.";
-    } else if (!EMAIL_PATTERN.test(email)) {
+    if (email.trim() && !EMAIL_PATTERN.test(email)) {
       errors.email = "Please enter a valid email address.";
     }
 
@@ -191,9 +187,10 @@ export function VendorCombobox({
     setFormErrors({});
     startTransition(async () => {
       const res = await createVendorForCombobox({
-        vendorName,
-        company,
+        name,
+        contactName,
         email,
+        phone,
       });
 
       if (res.error || !res.vendor) {
@@ -327,59 +324,51 @@ export function VendorCombobox({
           <div className="grid gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="new_vendor_name">
-                Vendor / Client Name <span className="text-destructive">*</span>
+                Name <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="new_vendor_name"
-                value={vendorName}
+                placeholder="Vendor name"
+                value={name}
                 onChange={(e) => {
-                  setVendorName(e.target.value);
+                  setName(e.target.value);
                   setFormErrors((current) => ({
                     ...current,
-                    vendorName: undefined,
+                    name: undefined,
                     form: undefined,
                   }));
                 }}
                 disabled={pending}
-                aria-invalid={Boolean(formErrors.vendorName)}
+                aria-invalid={Boolean(formErrors.name)}
               />
-              {formErrors.vendorName ? (
+              {formErrors.name ? (
                 <p className="text-xs text-destructive">
-                  {formErrors.vendorName}
+                  {formErrors.name}
                 </p>
               ) : null}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="new_vendor_company">
-                Company <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="new_vendor_contact_name">Contact Name</Label>
               <Input
-                id="new_vendor_company"
-                value={company}
+                id="new_vendor_contact_name"
+                placeholder="Contact name"
+                value={contactName}
                 onChange={(e) => {
-                  setCompany(e.target.value);
+                  setContactName(e.target.value);
                   setFormErrors((current) => ({
                     ...current,
-                    company: undefined,
                     form: undefined,
                   }));
                 }}
                 disabled={pending}
-                aria-invalid={Boolean(formErrors.company)}
               />
-              {formErrors.company ? (
-                <p className="text-xs text-destructive">
-                  {formErrors.company}
-                </p>
-              ) : null}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="new_vendor_email">
-                Email <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="new_vendor_email">Email</Label>
               <Input
                 id="new_vendor_email"
                 type="email"
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -397,6 +386,22 @@ export function VendorCombobox({
                   {formErrors.email}
                 </p>
               ) : null}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="new_vendor_phone">Phone</Label>
+              <Input
+                id="new_vendor_phone"
+                placeholder="Phone"
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  setFormErrors((current) => ({
+                    ...current,
+                    form: undefined,
+                  }));
+                }}
+                disabled={pending}
+              />
             </div>
             {formErrors.form ? (
               <p className="text-sm text-destructive">{formErrors.form}</p>
