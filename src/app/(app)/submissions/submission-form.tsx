@@ -85,7 +85,7 @@ export function SubmissionForm({
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="vendor_id">Vendor</Label>
+            <Label htmlFor="vendor_search">Vendor</Label>
             <VendorCombobox vendors={vendors} />
           </div>
           <div className="flex flex-col gap-1.5">
