@@ -18,11 +18,18 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Skill Search", href: "/search", minRole: "any" },
   { label: "Pipeline", href: "/pipeline", minRole: "any" },
   { label: "Requirements", href: "/requirements", minRole: "any" },
+  { label: "Applications", href: "/applications", minRole: "any" },
   { label: "Submissions", href: "/submissions", minRole: "any" },
   { label: "Interviews", href: "/interviews", minRole: "any" },
   { label: "Placements", href: "/placements", minRole: "any" },
   { label: "Vendors", href: "/vendors", minRole: "any" },
   { label: "Tasks", href: "/tasks", minRole: "any" },
   { label: "Activity Logs", href: "/logs", minRole: "admin" },
+  { label: "Career sites", href: "/settings/career-sites", minRole: "admin" },
+  {
+    label: "Distribution channels",
+    href: "/settings/channels",
+    minRole: "admin",
+  },
   { label: "Users", href: "/users", minRole: "admin" },
 ];
