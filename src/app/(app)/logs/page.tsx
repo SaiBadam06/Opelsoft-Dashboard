@@ -113,7 +113,6 @@ export default async function LogsPage(props: {
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <span className="font-medium">{log.action}</span>
-                        {log.action === "Status changed" && log.metadata?.from && log.metadata?.to ? (
                         {tab === "submission" &&
                         log.action === "Status changed" &&
                         log.metadata?.from &&
@@ -122,10 +121,6 @@ export default async function LogsPage(props: {
                             <Badge
                               className={cn(
                                 "font-normal",
-                                submissionStatusBadgeClass(log.metadata.from),
-                              )}
-                            >
-                              {submissionStatusLabel(log.metadata.from)}
                                 submissionStatusBadgeClass(
                                   String(log.metadata.from) as SubmissionStatus,
                                 ),
@@ -139,10 +134,6 @@ export default async function LogsPage(props: {
                             <Badge
                               className={cn(
                                 "font-normal",
-                                submissionStatusBadgeClass(log.metadata.to),
-                              )}
-                            >
-                              {submissionStatusLabel(log.metadata.to)}
                                 submissionStatusBadgeClass(
                                   String(log.metadata.to) as SubmissionStatus,
                                 ),
