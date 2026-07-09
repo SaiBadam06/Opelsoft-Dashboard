@@ -12,14 +12,18 @@
     "test:watch": "vitest",
     "seed": "dotenv -e .env.local -- tsx ./scripts/seed.ts",
     "seed:candidates": "dotenv -e .env.local -- tsx ./scripts/seed-candidates.ts",
-    "seed:all": "dotenv -e .env.local -- tsx ./scripts/seed-all.ts"
+    "seed:all": "dotenv -e .env.local -- tsx ./scripts/seed-all.ts",
+    "seed:careers-demo": "dotenv -e .env.local -- tsx ./scripts/seed-careers-demo.ts",
+    "test:careers-apply": "dotenv -e .env.local -- node scripts/test-apply-e2e.mjs",
+    "test:careers-bridge": "dotenv -e .env.local -- node scripts/test-submission-bridge.mjs",
+    "test:careers-branding": "dotenv -e .env.local -- node scripts/test-career-branding.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@google/generative-ai": "^0.24.1",
+    "@google/genai": "^2.10.0",
     "@gsap/react": "^2.1.2",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",

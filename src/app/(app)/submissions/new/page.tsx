@@ -3,7 +3,12 @@ import { requirementOptions } from "@/lib/requirements";
 import { vendorOptions } from "@/lib/vendors";
 import { SubmissionForm } from "../submission-form";
 
-export default async function NewSubmissionPage() {
+export default async function NewSubmissionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ candidate_id?: string; requirement_id?: string }>;
+}) {
+  const sp = await searchParams;
   const [candidates, requirements, vendors] = await Promise.all([
     candidateOptions(),
     requirementOptions(),
@@ -27,6 +32,8 @@ export default async function NewSubmissionPage() {
         requirements={requirements}
         vendors={vendors}
         today={today}
+        defaultCandidateId={sp.candidate_id}
+        defaultRequirementId={sp.requirement_id}
       />
     </div>
   );

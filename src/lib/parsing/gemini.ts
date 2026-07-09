@@ -1,14 +1,27 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import type { ParsedResume } from "./types";
 
-function model() {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error("GEMINI_API_KEY is not configured.");
-  return new GoogleGenerativeAI(key).getGenerativeModel({ model: "gemini-2.5-flash" });
+const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+
+function ai() {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not configured.");
+  return new GoogleGenAI({ apiKey });
 }
 
 const stripFences = (s: string) =>
   s.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+
+// One Gemini call returning JSON text. responseMimeType enforces clean JSON;
+// stripFences stays as a defensive fallback.
+async function generateJson(prompt: string): Promise<string> {
+  const res = await ai().models.generateContent({
+    model: MODEL,
+    contents: prompt,
+    config: { responseMimeType: "application/json", temperature: 0 },
+  });
+  return stripFences((res.text ?? "").trim());
+}
 
 // Ported from JD-Resume-parsing (parseResume). Scoring omitted.
 export async function parseResume(resumeText: string): Promise<ParsedResume> {
@@ -43,8 +56,7 @@ Return ONLY valid JSON with no markdown, no code blocks, no explanation:
 Resume Text:
 ${resumeText}`;
 
-  const result = await model().generateContent(prompt);
-  return JSON.parse(stripFences(result.response.text().trim())) as ParsedResume;
+  return JSON.parse(await generateJson(prompt)) as ParsedResume;
 }
 
 // Infer the concrete skills a job title typically requires (for global skill search).
@@ -57,8 +69,7 @@ Use short, canonical skill names exactly as they'd appear on a resume (e.g. "Mac
 Return ONLY valid JSON with no markdown, no code blocks, no explanation:
 { "required": string[], "nice_to_have": string[] }`;
 
-  const result = await model().generateContent(prompt);
-  return JSON.parse(stripFences(result.response.text().trim())) as {
+  return JSON.parse(await generateJson(prompt)) as {
     required: string[];
     nice_to_have: string[];
   };
@@ -89,8 +100,7 @@ Rank the candidates best-match first.
 Return ONLY valid JSON with no markdown, no code blocks, no explanation:
 { "ranking": [{ "candidateId": string, "matched": string[], "bonusMatched": string[], "reason": string }] }`;
 
-  const result = await model().generateContent(prompt);
-  const parsed = JSON.parse(stripFences(result.response.text().trim())) as {
+  const parsed = JSON.parse(await generateJson(prompt)) as {
     ranking: { candidateId: string; matched: string[]; bonusMatched: string[]; reason: string }[];
   };
   return parsed.ranking;

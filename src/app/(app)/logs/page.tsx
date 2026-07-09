@@ -9,6 +9,7 @@ import { LogsFilters, LogsTabs } from "./logs-filters";
 import {
   submissionStatusLabel,
   submissionStatusBadgeClass,
+  type SubmissionStatus,
 } from "@/lib/job-constants";
 import { formatDateTime } from "@/lib/format";
 import {
@@ -112,24 +113,35 @@ export default async function LogsPage(props: {
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <span className="font-medium">{log.action}</span>
-                        {log.action === "Status changed" && log.metadata?.from && log.metadata?.to ? (
+                        {tab === "submission" &&
+                        log.action === "Status changed" &&
+                        log.metadata?.from &&
+                        log.metadata?.to ? (
                           <div className="flex items-center gap-2 mt-1">
                             <Badge
                               className={cn(
                                 "font-normal",
-                                submissionStatusBadgeClass(log.metadata.from),
+                                submissionStatusBadgeClass(
+                                  String(log.metadata.from) as SubmissionStatus,
+                                ),
                               )}
                             >
-                              {submissionStatusLabel(log.metadata.from)}
+                              {submissionStatusLabel(
+                                String(log.metadata.from) as SubmissionStatus,
+                              )}
                             </Badge>
                             <span className="text-muted-foreground text-xs">→</span>
                             <Badge
                               className={cn(
                                 "font-normal",
-                                submissionStatusBadgeClass(log.metadata.to),
+                                submissionStatusBadgeClass(
+                                  String(log.metadata.to) as SubmissionStatus,
+                                ),
                               )}
                             >
-                              {submissionStatusLabel(log.metadata.to)}
+                              {submissionStatusLabel(
+                                String(log.metadata.to) as SubmissionStatus,
+                              )}
                             </Badge>
                           </div>
                         ) : null}

@@ -7,8 +7,33 @@
  *   $env:SUPABASE_ACCESS_TOKEN="sbp_..."
  *   node scripts/apply-migration-remote.mjs supabase/migrations/0007_submission_status_pipeline.sql
  */
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, existsSync } from "node:fs";
+import { resolve, join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+function loadDotEnvLocal() {
+  const envPath = join(__dirname, "../.env.local");
+  if (!existsSync(envPath)) return;
+  for (const line of readFileSync(envPath, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq <= 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let val = trimmed.slice(eq + 1).trim();
+    if (
+      (val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'"))
+    ) {
+      val = val.slice(1, -1);
+    }
+    if (!process.env[key]) process.env[key] = val;
+  }
+}
+
+loadDotEnvLocal();
 
 const projectRef = "zhohylkyzuqawpygmjbf";
 const file = process.argv[2];

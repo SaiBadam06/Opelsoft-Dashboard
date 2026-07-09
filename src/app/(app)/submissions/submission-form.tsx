@@ -17,6 +17,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import type { VendorOption } from "@/lib/vendors";
+import { VendorCombobox } from "./vendor-combobox";
 
 const selectClassName = "h-9 rounded-md border bg-background px-3 text-sm";
 
@@ -25,11 +27,15 @@ export function SubmissionForm({
   requirements,
   vendors,
   today,
+  defaultCandidateId,
+  defaultRequirementId,
 }: {
   candidates: { id: string; full_name: string }[];
   requirements: { id: string; title: string }[];
-  vendors: { id: string; name: string }[];
+  vendors: VendorOption[];
   today: string;
+  defaultCandidateId?: string;
+  defaultRequirementId?: string;
 }) {
   const [state, formAction, pending] = useActionState(createSubmission, null);
 
@@ -50,7 +56,7 @@ export function SubmissionForm({
               name="candidate_id"
               required
               className={selectClassName}
-              defaultValue=""
+              defaultValue={defaultCandidateId ?? ""}
             >
               <option value="" disabled>
                 Select a candidate
@@ -68,7 +74,7 @@ export function SubmissionForm({
               id="requirement_id"
               name="requirement_id"
               className={selectClassName}
-              defaultValue=""
+              defaultValue={defaultRequirementId ?? ""}
             >
               <option value="" />
               {requirements.map((r) => (
@@ -79,20 +85,8 @@ export function SubmissionForm({
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="vendor_id">Vendor</Label>
-            <select
-              id="vendor_id"
-              name="vendor_id"
-              className={selectClassName}
-              defaultValue=""
-            >
-              <option value="" />
-              {vendors.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
+            <Label htmlFor="vendor_search">Vendor</Label>
+            <VendorCombobox vendors={vendors} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="end_client">End client</Label>
@@ -137,7 +131,7 @@ export function SubmissionForm({
               id="status"
               name="status"
               className={selectClassName}
-              defaultValue="submitted"
+              defaultValue={defaultRequirementId ? "matched" : "submitted"}
             >
               {SUBMISSION_STATUSES.map((o) => (
                 <option key={o.value} value={o.value}>

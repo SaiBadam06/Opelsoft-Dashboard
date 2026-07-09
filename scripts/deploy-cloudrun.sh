@@ -33,7 +33,7 @@ echo "==> Building and pushing image: ${IMAGE}"
 gcloud builds submit --project "${GCP_PROJECT_ID}" --config cloudbuild.yaml \
   --substitutions="_IMAGE=${IMAGE},_SUPABASE_URL=${SUPABASE_URL},_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY},_SITE_URL=${SITE_URL}"
 
-ENV_VARS="NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL},NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY},NEXT_PUBLIC_SITE_URL=${SITE_URL},SITE_URL=${SITE_URL}"
+ENV_VARS="NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL},NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY},NEXT_PUBLIC_SITE_URL=${SITE_URL},SITE_URL=${SITE_URL},DEFAULT_CAREER_SITE_SLUG=${DEFAULT_CAREER_SITE_SLUG:-opelsoft}"
 if [[ -n "${SMTP_USER}" ]]; then
   ENV_VARS="${ENV_VARS},SMTP_USER=${SMTP_USER}"
 fi
@@ -51,7 +51,7 @@ gcloud run deploy "${SERVICE_NAME}" \
   --memory 1Gi \
   --max-instances 3 \
   --set-env-vars "${ENV_VARS}" \
-  --set-secrets "SUPABASE_SERVICE_ROLE_KEY=opelsoft-service-role:latest,SMTP_PASS=opelsoft-smtp-pass:latest"
+  --set-secrets "SUPABASE_SERVICE_ROLE_KEY=opelsoft-service-role:latest,SMTP_PASS=opelsoft-smtp-pass:latest,GEMINI_API_KEY=opelsoft-gemini-key:latest"
 
 echo "==> Deployed. Service URL should match SITE_URL: ${SITE_URL}"
 echo "    Verify Supabase Auth → URL Configuration uses this URL."

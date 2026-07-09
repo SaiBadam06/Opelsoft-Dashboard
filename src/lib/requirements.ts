@@ -19,6 +19,13 @@ export interface Requirement {
   status: RequirementStatus;
   closing_date: string | null;
   notes: string | null;
+  // Email-intake fields (migration 0014).
+  nice_to_have_skills: string | null;
+  work_authorization: string | null;
+  duration: string | null;
+  work_mode: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -28,7 +35,7 @@ export interface RequirementWithVendor extends Requirement {
 }
 
 const COLUMNS =
-  "id, title, vendor_id, end_client, experience, skills, location, remote, rate, employment_type, priority, status, closing_date, notes, created_at, updated_at";
+  "id, title, vendor_id, end_client, experience, skills, location, remote, rate, employment_type, priority, status, closing_date, notes, nice_to_have_skills, work_authorization, duration, work_mode, contact_name, contact_email, created_at, updated_at";
 
 export async function listRequirements(): Promise<RequirementWithVendor[]> {
   const supabase = await createClient();

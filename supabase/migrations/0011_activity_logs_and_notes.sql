@@ -1,4 +1,4 @@
--- 0008_activity_logs_and_notes.sql
+-- 0011_activity_logs_and_notes.sql
 -- Epic: Activity Log and Audit Trail
 -- Implements manual notes and append-only activity logging.
 

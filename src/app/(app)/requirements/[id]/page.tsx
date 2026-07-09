@@ -4,8 +4,12 @@ import { Pencil } from "lucide-react";
 
 import { requireProfile } from "@/lib/auth";
 import { getRequirement } from "@/lib/requirements";
+import { listScreenings } from "@/lib/screenings";
 import { listNotes } from "@/lib/notes";
 import { listActivityLogs } from "@/lib/activity";
+import { ScreenCandidates } from "../screen-candidates";
+import { getRequirementPostingState } from "@/lib/job-postings-admin";
+import { JobPostingCard } from "../job-posting-card";
 import {
   requirementStatusLabel,
   requirementStatusBadgeClass,
@@ -46,6 +50,23 @@ function LongText({ value }: { value: string | null }) {
   return <span className="whitespace-pre-wrap">{value}</span>;
 }
 
+function SkillChips({ value }: { value: string | null }) {
+  const skills = (value ?? "")
+    .split(/[,\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (skills.length === 0) return <span className="text-sm">{DASH}</span>;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {skills.map((s, i) => (
+        <span key={i} className="rounded-full bg-muted px-2.5 py-1 text-xs">
+          {s}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">{children}</div>;
 }
@@ -57,12 +78,16 @@ export default async function Page({
 }) {
   const { id } = await params;
   const me = await requireProfile();
-  const r = await getRequirement(id);
+  const [r, postingState] = await Promise.all([
+    getRequirement(id),
+    getRequirementPostingState(id),
+  ]);
   if (!r) notFound();
 
-  const [notes, activityLogs] = await Promise.all([
+  const [notes, activityLogs, screenings] = await Promise.all([
     listNotes("requirement", id),
     listActivityLogs("requirement", id),
+    listScreenings(id),
   ]);
 
   return (
@@ -136,15 +161,32 @@ export default async function Page({
         <CardHeader>
           <CardTitle>Requirements</CardTitle>
         </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <Field label="Experience">
+            <LongText value={r.experience} />
+          </Field>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-muted-foreground">
+              Required <span className="opacity-70">(primary)</span>
+            </span>
+            <SkillChips value={r.skills} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-muted-foreground">
+              Nice-to-have <span className="opacity-70">(secondary)</span>
+            </span>
+            <SkillChips value={r.nice_to_have_skills} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ATS screening */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Screen candidates</CardTitle>
+        </CardHeader>
         <CardContent>
-          <Grid>
-            <Field label="Experience">
-              <LongText value={r.experience} />
-            </Field>
-            <Field label="Skills">
-              <LongText value={r.skills} />
-            </Field>
-          </Grid>
+          <ScreenCandidates requirementId={id} screenings={screenings} />
         </CardContent>
       </Card>
 
@@ -183,6 +225,7 @@ export default async function Page({
           />
         </CardContent>
       </Card>
+      <JobPostingCard requirement={r} state={postingState} />
     </div>
   );
 }
