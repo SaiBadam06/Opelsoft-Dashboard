@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
+import { syncCandidateStage } from "@/lib/pipeline-sync.server";
 import type { InterviewResult } from "@/lib/work-constants";
 
 function str(fd: FormData, k: string): string | null {
@@ -31,7 +32,11 @@ export async function createInterview(_prev: unknown, fd: FormData) {
     created_by: me.id,
   });
   if (error) return { error: error.message };
+  await syncCandidateStage(supabase, candidate_id, me.id);
   revalidatePath("/interviews");
+  revalidatePath("/pipeline");
+  revalidatePath("/candidates");
+  revalidatePath("/dashboard");
   redirect("/interviews");
 }
 
@@ -39,12 +44,20 @@ export async function setInterviewResult(id: string, result: InterviewResult) {
   const me = await getCurrentProfile();
   if (!me) return { error: "Not authorized" };
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("interviews")
     .update({ result })
-    .eq("id", id);
+    .eq("id", id)
+    .select("candidate_id")
+    .single();
   if (error) return { error: error.message };
+  if (data?.candidate_id) {
+    await syncCandidateStage(supabase, data.candidate_id, me.id);
+  }
   revalidatePath("/interviews");
+  revalidatePath("/pipeline");
+  revalidatePath("/candidates");
+  revalidatePath("/dashboard");
   return { ok: true as const };
 }
 
@@ -52,12 +65,20 @@ export async function setInterviewRound(id: string, round: string | null) {
   const me = await getCurrentProfile();
   if (!me) return { error: "Not authorized" };
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("interviews")
     .update({ round })
-    .eq("id", id);
+    .eq("id", id)
+    .select("candidate_id")
+    .single();
   if (error) return { error: error.message };
+  if (data?.candidate_id) {
+    await syncCandidateStage(supabase, data.candidate_id, me.id);
+  }
   revalidatePath("/interviews");
+  revalidatePath("/pipeline");
+  revalidatePath("/candidates");
+  revalidatePath("/dashboard");
   return { ok: true as const };
 }
 
