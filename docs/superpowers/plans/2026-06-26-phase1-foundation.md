@@ -217,7 +217,7 @@ NEXT_PUBLIC_SUPABASE_URL=your-project-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SEED_ADMIN_EMAIL=admin@opelsoft.test
-SEED_ADMIN_PASSWORD=ChangeMe!2026
+SEED_ADMIN_PASSWORD=
 ```
 
 - [ ] **Step 2: Create `app-web/.env.local`** with the real values from Task 4
@@ -227,7 +227,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://<your-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key>
 SUPABASE_SERVICE_ROLE_KEY=<service role key>
 SEED_ADMIN_EMAIL=admin@opelsoft.test
-SEED_ADMIN_PASSWORD=ChangeMe!2026
+SEED_ADMIN_PASSWORD=
 ```
 
 - [ ] **Step 3: Confirm `.env.local` is gitignored**
@@ -885,7 +885,7 @@ export default function Home() {
 - [ ] **Step 3: Verify login works end-to-end**
 
 Run: `npm run dev`, open `http://localhost:3000`.
-Expected: redirected to `/login`. Sign in with `admin@opelsoft.test` / `ChangeMe!2026` → lands on `/dashboard` (placeholder created next task; until then a 404 is acceptable — the redirect itself proves auth works). Confirm the session cookie is set and re-visiting `/login` bounces to `/dashboard`.
+Expected: redirected to `/login`. Sign in with the seeded admin credentials from `.env.local` → lands on `/dashboard` (placeholder created next task; until then a 404 is acceptable — the redirect itself proves auth works). Confirm the session cookie is set and re-visiting `/login` bounces to `/dashboard`.
 
 - [ ] **Step 4: Commit**
 

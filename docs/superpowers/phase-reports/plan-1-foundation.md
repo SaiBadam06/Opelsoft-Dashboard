@@ -54,7 +54,7 @@ model and row-level security in place. This is the base every later module
 ## Dummy admin credentials
 
 - **Email:** `admin@opelsoft.test`
-- **Password:** `ChangeMe!2026`
+- **Password:** set locally in `.env.local` as `SEED_ADMIN_PASSWORD` (never committed)
 - Defined in `.env.local` (`SEED_ADMIN_*`), which is gitignored. Re-runnable
   with `npm run seed` (idempotent).
 
