@@ -3,7 +3,18 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, FileText, Loader2, Search, Trash2, Users } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Eye,
+  FileText,
+  Loader2,
+  MoreHorizontal,
+  Pencil,
+  Search,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import type { Candidate, CoordinatorOption } from "@/lib/candidates";
@@ -24,13 +35,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -112,10 +123,13 @@ function CoordinatorSelect({
   );
 }
 
-// Per-row quick actions: jump to the candidate's docs, or delete the candidate.
-// stopPropagation keeps clicks off the row's navigate-to-detail handler.
+// Per-row "..." actions menu: view details, edit, docs, or delete the candidate.
+// stopPropagation keeps clicks off the row's navigate-to-detail handler. The delete
+// confirm dialog lives outside the menu (controlled by deleteOpen) because Base UI
+// unmounts the menu's portal on close — a dialog nested in a menu item would break.
 function RowActions({ id, name }: { id: string; name: string }) {
   const [pending, startTransition] = useTransition();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   function onDelete() {
     startTransition(async () => {
@@ -127,32 +141,49 @@ function RowActions({ id, name }: { id: string; name: string }) {
 
   return (
     <div
-      className="flex items-center justify-end gap-1"
+      className="flex items-center justify-end"
       onClick={(e) => e.stopPropagation()}
     >
-      <Button
-        variant="ghost"
-        size="icon"
-        title="Documents"
-        aria-label={`Documents for ${name}`}
-        render={<Link href={`/candidates/${id}?tab=documents`} />}
-      >
-        <FileText />
-      </Button>
-      <AlertDialog>
-        <AlertDialogTrigger
+      <DropdownMenu>
+        <DropdownMenuTrigger
           render={
             <Button
               variant="ghost"
               size="icon"
-              className="text-destructive"
-              title="Delete"
-              aria-label={`Delete ${name}`}
+              title="Actions"
+              aria-label={`Actions for ${name}`}
             >
-              <Trash2 />
+              <MoreHorizontal />
             </Button>
           }
         />
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuItem render={<Link href={`/candidates/${id}`} />}>
+            <Eye />
+            View details
+          </DropdownMenuItem>
+          <DropdownMenuItem render={<Link href={`/candidates/${id}/edit`} />}>
+            <Pencil />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            render={<Link href={`/candidates/${id}?tab=documents`} />}
+          >
+            <FileText />
+            Documents
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete candidate?</AlertDialogTitle>
@@ -240,7 +271,9 @@ export function CandidatesTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              {/* w-full makes Name greedy: it absorbs the table's leftover width so
+                  the other columns pack tight and no dead gap forms before Actions. */}
+              <TableHead className="w-full">Name</TableHead>
               <TableHead>Rate</TableHead>
               <TableHead>Visa</TableHead>
               <TableHead>Location</TableHead>
