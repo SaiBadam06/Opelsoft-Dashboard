@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ModeToggle } from "@/components/mode-toggle";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { GlobalSearch } from "@/components/app-shell/global-search";
 
 function initialsFrom(profile: Profile): string {
   const name = profile.full_name?.trim();
@@ -39,8 +40,9 @@ export function Topbar({ profile }: { profile: Profile }) {
 
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-2 border-b bg-background/70 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/50">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-1 items-center gap-2">
         <SidebarTrigger />
+        <GlobalSearch />
       </div>
 
       <div className="flex items-center gap-1">

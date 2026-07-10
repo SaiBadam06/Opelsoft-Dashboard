@@ -64,7 +64,11 @@ export function ReassignControl({
         onValueChange={(value) => setSelected((value as string | null) ?? "")}
       >
         <SelectTrigger className="w-full sm:w-64">
-          <SelectValue placeholder="Select coordinator" />
+          <SelectValue placeholder="Select coordinator">
+            {(value) =>
+              coordinators.find((c) => c.id === value)?.name ?? "Select coordinator"
+            }
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
