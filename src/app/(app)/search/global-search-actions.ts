@@ -13,13 +13,17 @@ export interface GlobalSearchHit {
   href: string;
 }
 
-const PER_TYPE = 6;
+const PER_TYPE = 10;
 
 // PostgREST .or() separates conditions on commas and groups with parens; % is a LIKE wildcard.
-// Neutralise those so a user term can't inject filter grammar, then wildcard-wrap it.
+// Neutralise those so a user term can't inject filter grammar, then wildcard-wrap and
+// double-quote the value so spaces and any remaining reserved chars are treated literally
+// (an unquoted `%John Smith%` breaks the filter grammar). Escape embedded quotes.
 function likePattern(q: string): string | null {
   const cleaned = q.replace(/[%,()\\*]/g, " ").trim();
-  return cleaned ? `%${cleaned}%` : null;
+  if (!cleaned) return null;
+  const escaped = cleaned.replace(/"/g, '\\"');
+  return `"%${escaped}%"`;
 }
 
 // Global topbar search. RLS scopes every table to what the current user may see.
@@ -33,8 +37,10 @@ export async function globalSearch(query: string): Promise<GlobalSearchHit[]> {
   const [cand, reqs, vends] = await Promise.all([
     supabase
       .from("candidates")
-      .select("id, full_name, email, current_company")
-      .or(`full_name.ilike.${pattern},email.ilike.${pattern},current_company.ilike.${pattern}`)
+      .select("id, full_name, email, primary_skills, current_company")
+      .or(
+        `full_name.ilike.${pattern},email.ilike.${pattern},primary_skills.ilike.${pattern},current_company.ilike.${pattern}`,
+      )
       .limit(PER_TYPE),
     supabase
       .from("requirements")
@@ -47,6 +53,10 @@ export async function globalSearch(query: string): Promise<GlobalSearchHit[]> {
       .or(`name.ilike.${pattern},contact_name.ilike.${pattern},email.ilike.${pattern}`)
       .limit(PER_TYPE),
   ]);
+
+  // Surface query failures instead of silently returning nothing, so the UI can show an error.
+  const firstError = cand.error ?? reqs.error ?? vends.error;
+  if (firstError) throw new Error(firstError.message);
 
   const hits: GlobalSearchHit[] = [];
   for (const c of cand.data ?? []) {

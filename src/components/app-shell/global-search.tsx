@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Briefcase, Building2, Loader2, Search, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   globalSearch,
   type GlobalSearchHit,
@@ -22,36 +21,22 @@ const ORDER: GlobalSearchType[] = ["candidate", "requirement", "vendor"];
 
 export function GlobalSearch() {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<GlobalSearchHit[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const reqId = useRef(0);
-  const openRef = useRef(open);
+  const inputRef = useRef<HTMLInputElement>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
 
-  function setPaletteOpen(next: boolean) {
-    setOpen(next);
-    if (!next) {
-      setQuery("");
-      setHits([]);
-      setLoading(false);
-      setActive(0);
-    }
-  }
-
-  // Track latest open state for the one-time keydown listener.
-  useEffect(() => {
-    openRef.current = open;
-  }, [open]);
-
-  // Cmd/Ctrl+K toggles the palette from anywhere.
+  // Cmd/Ctrl+K focuses the search from anywhere.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setPaletteOpen(!openRef.current);
+        inputRef.current?.focus();
       }
     }
     window.addEventListener("keydown", onKey);
@@ -65,10 +50,19 @@ export function GlobalSearch() {
     if (q.length < 2) return;
     const id = ++reqId.current;
     const t = setTimeout(async () => {
-      const res = await globalSearch(q);
-      if (id === reqId.current) {
-        setHits(res);
-        setLoading(false);
+      try {
+        const res = await globalSearch(q);
+        if (id === reqId.current) {
+          setHits(res);
+          setError(false);
+        }
+      } catch {
+        if (id === reqId.current) {
+          setHits([]);
+          setError(true);
+        }
+      } finally {
+        if (id === reqId.current) setLoading(false);
       }
     }, 200);
     return () => clearTimeout(t);
@@ -82,6 +76,8 @@ export function GlobalSearch() {
   function onQueryChange(value: string) {
     setQuery(value);
     setActive(0);
+    setError(false);
+    setOpen(true);
     const short = value.trim().length < 2;
     setLoading(!short);
     if (short) setHits([]);
@@ -95,17 +91,28 @@ export function GlobalSearch() {
   const flat = grouped.flatMap((g) => g.items);
 
   function go(hit: GlobalSearchHit) {
-    setPaletteOpen(false);
+    setOpen(false);
+    setQuery("");
+    setHits([]);
+    setActive(0);
+    inputRef.current?.blur();
     router.push(hit.href);
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Escape") {
+      setOpen(false);
+      inputRef.current?.blur();
+      return;
+    }
     if (flat.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
+      setOpen(true);
       setActive((i) => (i + 1) % flat.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
+      setOpen(true);
       setActive((i) => (i - 1 + flat.length) % flat.length);
     } else if (e.key === "Enter") {
       e.preventDefault();
@@ -115,110 +122,95 @@ export function GlobalSearch() {
   }
 
   const trimmed = query.trim();
+  const showDropdown = open && trimmed.length >= 2;
   let row = -1;
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setPaletteOpen(true)}
-        className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-md border bg-muted/40 px-3 text-sm text-muted-foreground transition-colors hover:bg-muted"
-        aria-label="Search candidates, requirements and vendors"
-      >
-        <Search className="size-4" />
-        <span className="flex-1 text-left">Search…</span>
-        <kbd className="hidden rounded border bg-background px-1.5 font-mono text-[0.65rem] leading-5 sm:inline">
+    <div className="relative min-w-0 max-w-md flex-1">
+      <div className="relative">
+        {loading ? (
+          <Loader2 className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+        ) : (
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+        )}
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          onFocus={() => setOpen(true)}
+          onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+          onKeyDown={onKeyDown}
+          placeholder="Search candidates, requirements, vendors…"
+          aria-label="Search candidates, requirements and vendors"
+          autoComplete="off"
+          role="combobox"
+          aria-expanded={showDropdown}
+          aria-controls="global-search-results"
+          className="h-9 w-full rounded-md border bg-muted/40 pl-8 pr-12 text-sm outline-none transition-colors placeholder:text-muted-foreground hover:bg-muted focus:bg-background"
+        />
+        <kbd className="pointer-events-none absolute top-1/2 right-2.5 hidden -translate-y-1/2 rounded border bg-background px-1.5 font-mono text-[0.65rem] leading-5 text-muted-foreground sm:inline">
           ⌘K
         </kbd>
-      </button>
+      </div>
 
-      <Dialog open={open} onOpenChange={setPaletteOpen}>
-        <DialogContent
-          showCloseButton={false}
-          className="top-[15%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-lg"
+      {showDropdown ? (
+        <div
+          id="global-search-results"
+          role="listbox"
+          className="absolute top-full right-0 left-0 z-30 mt-1 max-h-80 w-full overflow-auto rounded-lg border bg-popover p-1 text-sm text-popover-foreground shadow-lg"
         >
-          <DialogTitle className="sr-only">Search</DialogTitle>
-          <div className="flex items-center gap-2 border-b px-3">
-            {loading ? (
-              <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
-            ) : (
-              <Search className="size-4 shrink-0 text-muted-foreground" />
-            )}
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => onQueryChange(e.target.value)}
-              onKeyDown={onKeyDown}
-              placeholder="Search candidates, requirements, vendors…"
-              className="h-11 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-
-          <div className="max-h-80 overflow-y-auto p-1">
-            {trimmed.length < 2 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">
-                Type at least 2 characters to search.
-              </p>
-            ) : loading && flat.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">Searching…</p>
-            ) : flat.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">
-                No results for “{trimmed}”.
-              </p>
-            ) : (
-              grouped.map(({ type, items }) => {
-                const { label, icon: Icon } = TYPE_META[type];
-                return (
-                  <div key={type} className="mb-1">
-                    <p className="px-2 py-1 text-xs font-medium text-muted-foreground">{label}</p>
-                    {items.map((hit) => {
-                      row += 1;
-                      const i = row;
-                      return (
-                        <button
-                          key={hit.id}
-                          ref={i === active ? activeRef : null}
-                          type="button"
-                          onClick={() => go(hit)}
-                          onMouseMove={() => setActive(i)}
-                          className={cn(
-                            "flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm",
-                            i === active ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
-                          )}
-                        >
-                          <Icon className="size-4 shrink-0 text-muted-foreground" />
-                          <span className="truncate font-medium">{hit.title}</span>
-                          {hit.subtitle ? (
-                            <span className="ml-auto truncate pl-2 text-xs text-muted-foreground">
-                              {hit.subtitle}
-                            </span>
-                          ) : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          <div className="flex items-center gap-4 border-t px-3 py-2 text-[0.7rem] text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <kbd className="rounded border bg-muted px-1 font-mono leading-4">↑</kbd>
-              <kbd className="rounded border bg-muted px-1 font-mono leading-4">↓</kbd>
-              navigate
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="rounded border bg-muted px-1 font-mono leading-4">↵</kbd>
-              open
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="rounded border bg-muted px-1 font-mono leading-4">esc</kbd>
-              close
-            </span>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+          {error ? (
+            <p className="p-6 text-center text-sm text-destructive">
+              Search failed. Please try again.
+            </p>
+          ) : loading && flat.length === 0 ? (
+            <p className="p-6 text-center text-sm text-muted-foreground">Searching…</p>
+          ) : flat.length === 0 ? (
+            <p className="p-6 text-center text-sm text-muted-foreground">
+              No results for “{trimmed}”.
+            </p>
+          ) : (
+            grouped.map(({ type, items }) => {
+              const { label, icon: Icon } = TYPE_META[type];
+              return (
+                <div key={type} className="mb-1">
+                  <p className="px-2 py-1 text-xs font-medium text-muted-foreground">{label}</p>
+                  {items.map((hit) => {
+                    row += 1;
+                    const i = row;
+                    return (
+                      <button
+                        key={hit.id}
+                        ref={i === active ? activeRef : null}
+                        type="button"
+                        role="option"
+                        aria-selected={i === active}
+                        onMouseMove={() => setActive(i)}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          go(hit);
+                        }}
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm",
+                          i === active ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
+                        )}
+                      >
+                        <Icon className="size-4 shrink-0 text-muted-foreground" />
+                        <span className="truncate font-medium">{hit.title}</span>
+                        {hit.subtitle ? (
+                          <span className="ml-auto truncate pl-2 text-xs text-muted-foreground">
+                            {hit.subtitle}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })
+          )}
+        </div>
+      ) : null}
+    </div>
   );
 }
