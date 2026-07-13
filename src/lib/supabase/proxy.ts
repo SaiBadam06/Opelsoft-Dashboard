@@ -48,7 +48,11 @@ export async function updateSession(request: NextRequest) {
     path === "/login" ||
     path.startsWith("/auth") ||
     path === "/careers" ||
-    path.startsWith("/careers/");
+    path.startsWith("/careers/") ||
+    // These two authenticate themselves (drain secret header / unsubscribe token) and are
+    // called by pg_cron / email clients with no browser session — never redirect them to /login.
+    path === "/api/campaigns/drain" ||
+    path === "/api/unsubscribe";
 
   // Dev/staging only: pass ?site= override to server components via request header
   const siteOverride = request.nextUrl.searchParams.get("site");
