@@ -51,5 +51,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const token = new URL(request.url).searchParams.get("token") ?? "";
   const ok = await suppress(token);
+  // The browser form expects a page; RFC 8058 one-click callers only check the status.
+  if (request.headers.get("accept")?.includes("text/html")) {
+    const html = ok
+      ? "<h2>You're unsubscribed.</h2><p>You won't receive further outreach from OpelSoft.</p>"
+      : "<h2>Link invalid or expired.</h2>";
+    return new NextResponse(html, { status: ok ? 200 : 404, headers: { "content-type": "text/html" } });
+  }
   return NextResponse.json({ ok }, { status: ok ? 200 : 404 });
 }
