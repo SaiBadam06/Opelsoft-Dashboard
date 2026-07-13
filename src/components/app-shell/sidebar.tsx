@@ -67,7 +67,7 @@ export function AppSidebar({ role }: { role: Role }) {
           <Image
             src="/logo.svg"
             alt="OpelSoft"
-            width={150}
+            width={133}
             height={36}
             priority
             className="h-9 w-auto group-data-[collapsible=icon]:hidden"
