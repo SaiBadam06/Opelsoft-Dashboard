@@ -19,6 +19,7 @@ import {
   ListTodo,
   ShieldCheck,
   ScrollText,
+  Mail,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,6 +47,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "/interviews": CalendarClock,
   "/placements": Award,
   "/vendors": Building2,
+  "/campaigns": Mail,
   "/tasks": ListTodo,
   "/logs": ScrollText,
   "/settings/career-sites": Globe,
