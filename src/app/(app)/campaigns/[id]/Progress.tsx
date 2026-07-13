@@ -17,12 +17,14 @@ export function Progress({
   total,
   sent,
   failed,
+  suppressed,
 }: {
   id: string;
   initialStatus: CampaignStatus;
   total: number;
   sent: number;
   failed: number;
+  suppressed: number;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -35,7 +37,7 @@ export function Progress({
     return () => clearInterval(interval);
   }, [initialStatus, router]);
 
-  const done = sent + failed;
+  const done = sent + failed + suppressed;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   function toggle(next: "sending" | "paused") {
@@ -57,6 +59,7 @@ export function Progress({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-muted-foreground">
             {done} / {total} processed ({pct}%) · {sent} sent · {failed} failed
+            {suppressed > 0 ? ` · ${suppressed} suppressed` : ""}
           </p>
           {initialStatus === "sending" ? (
             <Button variant="outline" size="sm" disabled={pending} onClick={() => toggle("paused")}>

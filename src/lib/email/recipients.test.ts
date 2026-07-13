@@ -24,6 +24,15 @@ describe("recipients", () => {
     const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" }) as ArrayBuffer;
     const rows = parseSpreadsheet(buf);
     expect(rows[0].email).toBe(normalizeEmail("v@x.com"));
-    expect(rows[0].mergeData["contact name"]).toBe("Sam");
+    expect(rows[0].mergeData["contact_name"]).toBe("Sam");
+  });
+  it("spreadsheet headers become merge-field-compatible keys", async () => {
+    const { applyMergeFields } = await import("./render");
+    const ws = XLSX.utils.aoa_to_sheet([["Email", "Contact Name"], ["v@x.com", "Sam"]]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+    const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" }) as ArrayBuffer;
+    const [row] = parseSpreadsheet(buf);
+    expect(applyMergeFields("Dear {{contact_name}}", row.mergeData)).toBe("Dear Sam");
   });
 });

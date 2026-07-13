@@ -44,7 +44,7 @@ export function parseSpreadsheet(buf: ArrayBuffer): ParsedRecipient[] {
   const out: ParsedRecipient[] = [];
   for (const row of rows) {
     const entries = Object.entries(row).map(
-      ([k, v]) => [k.toLowerCase().trim(), String(v ?? "").trim()] as const,
+      ([k, v]) => [k.toLowerCase().trim().replace(/\W+/g, "_"), String(v ?? "").trim()] as const,
     );
     const emailEntry = entries.find(([k]) => k === "email" || k.includes("email"));
     if (!emailEntry || !emailEntry[1]) continue;

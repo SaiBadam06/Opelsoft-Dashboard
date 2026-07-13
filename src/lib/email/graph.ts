@@ -19,6 +19,7 @@ async function getToken(): Promise<string> {
       scope: "https://graph.microsoft.com/.default",
       grant_type: "client_credentials",
     }),
+    signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`token ${res.status}: ${await res.text()}`);
   const json = (await res.json()) as { access_token: string; expires_in: number };
@@ -46,6 +47,7 @@ export class GraphSender implements EmailSender {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ message, saveToSentItems: true }),
+      signal: AbortSignal.timeout(15_000),
     });
     if (res.status === 202) return { id: res.headers.get("request-id") ?? "accepted" };
     const err = new Error(`graph sendMail ${res.status}: ${await res.text()}`) as Error & { status?: number };

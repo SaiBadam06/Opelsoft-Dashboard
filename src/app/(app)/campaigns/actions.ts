@@ -22,16 +22,11 @@ export async function createAndStartCampaign(_prev: unknown, fd: FormData) {
 
   const supabase = await createClient();
 
-  // Gather recipients from the 3 sources.
+  // Gather recipients from the 3 sources. Vendors go first: dedupe() keeps the
+  // FIRST occurrence of an email, and vendor rows carry merge data
+  // (contact_name/vendor_name) that manual/file entries don't — a vendor
+  // duplicated in the paste box must not lose that data to a blank manual entry.
   const recipients: ParsedRecipient[] = [];
-  const manual = String(fd.get("manual") ?? "").trim();
-  if (manual) recipients.push(...parseManualList(manual));
-
-  const file = fd.get("file");
-  if (file && file instanceof File && file.size > 0) {
-    recipients.push(...parseSpreadsheet(await file.arrayBuffer()));
-  }
-
   const vendorIdsRaw = String(fd.get("vendor_ids") ?? "").trim();
   const vendorMap = new Map<string, string>(); // email -> vendor_id
   if (vendorIdsRaw) {
@@ -42,6 +37,14 @@ export async function createAndStartCampaign(_prev: unknown, fd: FormData) {
       recipients.push({ email: v.email, mergeData: { contact_name: v.contact_name ?? "", vendor_name: v.name ?? "" } });
       vendorMap.set(v.email.toLowerCase(), v.id);
     }
+  }
+
+  const manual = String(fd.get("manual") ?? "").trim();
+  if (manual) recipients.push(...parseManualList(manual));
+
+  const file = fd.get("file");
+  if (file && file instanceof File && file.size > 0) {
+    recipients.push(...parseSpreadsheet(await file.arrayBuffer()));
   }
 
   const { valid } = validate(dedupe(recipients));

@@ -46,6 +46,7 @@ export default async function CampaignDetailPage({
   if (!campaign) notFound();
 
   const recipients = await listRecipients(id);
+  const suppressed = recipients.filter((r) => r.status === "suppressed").length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -67,6 +68,7 @@ export default async function CampaignDetailPage({
         total={campaign.total}
         sent={campaign.sent_count}
         failed={campaign.failed_count}
+        suppressed={suppressed}
       />
 
       <Card className="py-0">

@@ -47,7 +47,13 @@ export async function POST(request: NextRequest) {
   const batch = (claimed as Array<{ id: string; email: string; merge_data: Record<string, string>; unsubscribe_token: string }> | null) ?? [];
 
   if (batch.length === 0) {
-    // Nothing queued left → campaign is done.
+    // Done only when nothing is queued AND nothing is in-flight. Rows stuck in
+    // 'sending' (crashed tick) get reaped back to 'queued' within STALE_MIN and
+    // must keep the campaign alive, else they'd be orphaned as never-sent.
+    const stillSending = await countBy(db, campaign.id, "sending");
+    if (stillSending > 0) {
+      return NextResponse.json({ waiting: campaign.id, sending: stillSending });
+    }
     await db.from("email_campaigns").update({ status: "done" }).eq("id", campaign.id);
     return NextResponse.json({ done: campaign.id });
   }
