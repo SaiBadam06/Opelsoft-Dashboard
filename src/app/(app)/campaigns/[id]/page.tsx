@@ -5,7 +5,7 @@ import { getCampaign, listRecipients, type RecipientStatus } from "@/lib/campaig
 import { formatDateTime } from "@/lib/format";
 import { campaignStatusLabel, campaignStatusBadgeClass } from "@/lib/job-constants";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableBody,
