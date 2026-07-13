@@ -71,6 +71,10 @@ export async function setSubmissionStatus(
     .select("candidate_id, vendor_id, end_client, rate, status")
     .single();
   if (error) return { error: error.message };
+  // Stage sync + placement run as separate writes, not a transaction: Supabase
+  // JS has no client-side transaction, and the design keeps this logic in the
+  // app layer rather than a Postgres RPC. Both helpers are idempotent and re-run
+  // on every write, so a partial failure self-heals on the next status change.
   if (data?.candidate_id) {
     await syncCandidateStage(supabase, data.candidate_id, me.id);
     await ensurePlacementFromSubmission(supabase, data, me.id);

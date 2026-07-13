@@ -188,7 +188,8 @@ function RowActions({ id, name }: { id: string; name: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete candidate?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes “{name}”. This cannot be undone.
+              This permanently removes “{name}” and all of their submissions,
+              interviews, placements, and documents. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

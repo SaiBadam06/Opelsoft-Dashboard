@@ -102,6 +102,11 @@ export async function updateCandidate(
   if (!payload.full_name) return { error: "Name is required." };
 
   const supabase = await createClient();
+  const { data: before } = await supabase
+    .from("candidates")
+    .select("pipeline_stage")
+    .eq("id", id)
+    .single();
   if (
     stageRequiresBacking(payload.pipeline_stage) &&
     !(await candidateHasActivity(supabase, id))
@@ -116,9 +121,17 @@ export async function updateCandidate(
     .eq("id", id);
 
   if (error) return { error: error.message };
+  // Parity with the pipeline drag (setStage): an edit that changes the stage
+  // writes back to the candidate's latest submission (and placement if placed).
+  if (before && before.pipeline_stage !== payload.pipeline_stage) {
+    await writeBackStageToSubmission(supabase, id, payload.pipeline_stage, me.id);
+  }
   revalidatePath("/candidates");
   revalidatePath(`/candidates/${id}`);
   revalidatePath("/pipeline");
+  revalidatePath("/submissions");
+  revalidatePath("/placements");
+  revalidatePath("/dashboard");
   redirect(`/candidates/${id}`);
 }
 
