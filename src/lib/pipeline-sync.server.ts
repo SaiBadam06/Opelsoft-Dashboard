@@ -20,8 +20,9 @@ export interface PlaceableSubmission {
 }
 
 // Step 6 guard: does this candidate have any submission or interview? Advanced
-// and terminal stages require it. Fail-open (return true) on a query error so a
-// transient DB hiccup never blocks a legitimate stage change.
+// and terminal stages require it. Fail-closed (return false) on a query error —
+// for a data-integrity guard, a transient DB hiccup should block a gated stage
+// rather than let one through without backing data.
 export async function candidateHasActivity(
   supabase: ServerClient,
   candidateId: string,
@@ -40,7 +41,7 @@ export async function candidateHasActivity(
     return (subs ?? 0) > 0 || (ivs ?? 0) > 0;
   } catch (e) {
     console.error("[pipeline-sync] candidateHasActivity failed", e);
-    return true;
+    return false;
   }
 }
 

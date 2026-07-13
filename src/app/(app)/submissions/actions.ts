@@ -71,6 +71,11 @@ export async function setSubmissionStatus(
     .select("candidate_id, vendor_id, end_client, rate, status")
     .single();
   if (error) return { error: error.message };
+  // ponytail: not wrapped in a transaction — Supabase JS has no client-side
+  // txn, and the design (spec §Decision) deliberately keeps this in the app
+  // layer rather than a Postgres RPC. syncCandidateStage/ensurePlacement are
+  // idempotent and re-run on every write, so a partial failure self-heals on
+  // the next status change. Move to an RPC only if that lag ever bites.
   if (data?.candidate_id) {
     await syncCandidateStage(supabase, data.candidate_id, me.id);
     await ensurePlacementFromSubmission(supabase, data, me.id);
