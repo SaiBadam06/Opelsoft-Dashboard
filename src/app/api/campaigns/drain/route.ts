@@ -8,7 +8,10 @@ const BATCH = 28;
 const STALE_MIN = 5;
 
 export async function POST(request: NextRequest) {
-  if (request.headers.get("x-drain-secret") !== process.env.EMAIL_DRAIN_SECRET) {
+  // Fail closed: unset OR empty secret means the route is disabled (an empty
+  // header must never match an empty env value).
+  const secret = process.env.EMAIL_DRAIN_SECRET;
+  if (!secret || request.headers.get("x-drain-secret") !== secret) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const db = createServiceClient();
@@ -72,6 +75,9 @@ export async function POST(request: NextRequest) {
         unsubUrl: unsubscribeUrl(base, r.unsubscribe_token),
       });
       const { id } = await sender.send(msg);
+      // ponytail: at-least-once — if this update fails/crashes post-send, the reaper
+      // requeues after 5 min and the mail resends. Graph has no idempotency key, so
+      // exactly-once isn't possible; duplicates beat silently lost sends here.
       await db.from("email_campaign_recipients")
         .update({ status: "sent", message_id: id, sent_at: new Date().toISOString(), last_error: null })
         .eq("id", r.id);
