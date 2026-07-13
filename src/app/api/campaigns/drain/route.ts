@@ -90,7 +90,8 @@ export async function POST(request: NextRequest) {
       sent++;
     } catch (e) {
       const status = (e as { status?: number }).status ?? 0;
-      const retryable = status === 429 || status >= 500;
+      // TimeoutError = our 15s AbortSignal fired; transient, retry next tick.
+      const retryable = status === 429 || status >= 500 || (e as Error).name === "TimeoutError";
       await db.from("email_campaign_recipients")
         .update({ status: retryable ? "queued" : "failed", last_error: String((e as Error).message).slice(0, 500) })
         .eq("id", r.id);
