@@ -31,7 +31,10 @@ export function dedupe(list: ParsedRecipient[]): ParsedRecipient[] {
 export function validate(list: ParsedRecipient[]): { valid: ParsedRecipient[]; invalid: string[] } {
   const valid: ParsedRecipient[] = [];
   const invalid: string[] = [];
-  for (const r of list) (isValidEmail(r.email) ? valid.push(r) : invalid.push(r.email));
+  for (const r of list) {
+    if (isValidEmail(r.email)) valid.push(r);
+    else invalid.push(r.email);
+  }
   return { valid, invalid };
 }
 export function parseSpreadsheet(buf: ArrayBuffer): ParsedRecipient[] {

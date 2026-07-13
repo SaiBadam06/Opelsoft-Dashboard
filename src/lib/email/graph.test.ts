@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { it, expect, vi, beforeEach } from "vitest";
 import { GraphSender, __resetTokenCacheForTests } from "./graph";
 
 beforeEach(() => {
@@ -8,7 +8,7 @@ beforeEach(() => {
 
 it("acquires a token then POSTs sendMail with List-Unsubscribe as an extended property", async () => {
   const calls: Array<{ url: string; body: string }> = [];
-  vi.stubGlobal("fetch", vi.fn(async (url: string, init: any) => {
+  vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
     calls.push({ url, body: String(init?.body ?? "") });
     if (url.includes("/oauth2/")) return new Response(JSON.stringify({ access_token: "TKN", expires_in: 3600 }), { status: 200 });
     return new Response(null, { status: 202, headers: { "request-id": "req-1" } });
