@@ -5,8 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
 import { dedupe, validate, parseManualList, parseSpreadsheet, type ParsedRecipient } from "@/lib/email/recipients";
-
-const SENDERS = (process.env.EMAIL_SENDER_ADDRESSES ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+import { senderFor } from "@/lib/email/sender-address";
 
 export async function createAndStartCampaign(_prev: unknown, fd: FormData) {
   const me = await getCurrentProfile();
@@ -15,10 +14,11 @@ export async function createAndStartCampaign(_prev: unknown, fd: FormData) {
   const name = String(fd.get("name") ?? "").trim();
   const subject = String(fd.get("subject") ?? "").trim();
   const body_html = String(fd.get("body_html") ?? "").trim();
-  const from_address = String(fd.get("from_address") ?? "").trim();
   const reply_to = String(fd.get("reply_to") ?? "").trim() || null;
   if (!name || !subject || !body_html) return { error: "Name, subject and body are required." };
-  if (!SENDERS.includes(from_address)) return { error: "From address is not allow-listed." };
+  // From is derived from the logged-in user (see senderFor), never trusted from the form.
+  const from_address = senderFor(me);
+  if (!from_address) return { error: "No sender mailbox configured (EMAIL_SENDER_ADDRESSES)." };
 
   const supabase = await createClient();
 

@@ -13,8 +13,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const selectClassName = "h-9 rounded-md border bg-background px-3 text-sm";
-
 function VendorMultiSelect({
   vendors,
   selected,
@@ -52,11 +50,11 @@ function VendorMultiSelect({
 
 export function Composer({
   vendors,
-  senders,
+  sendingAs,
   defaultReplyTo,
 }: {
   vendors: VendorOption[];
-  senders: string[];
+  sendingAs: string;
   defaultReplyTo: string;
 }) {
   const [state, formAction, pending] = useActionState(createAndStartCampaign, null);
@@ -91,16 +89,13 @@ export function Composer({
             <Input id="name" name="name" required />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="from_address">
-              From <span className="text-destructive">*</span>
-            </Label>
-            <select id="from_address" name="from_address" className={selectClassName} required>
-              {senders.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+            <Label>From</Label>
+            <p className="flex h-9 items-center rounded-md border bg-muted px-3 text-sm">
+              {sendingAs}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Campaigns send from your account&apos;s mailbox automatically.
+            </p>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="reply_to">Reply-To</Label>

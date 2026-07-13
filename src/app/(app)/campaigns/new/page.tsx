@@ -1,12 +1,12 @@
+import { requireProfile } from "@/lib/auth";
 import { vendorOptions } from "@/lib/vendors";
+import { senderFor } from "@/lib/email/sender-address";
 import { Composer } from "./Composer";
 
 export default async function NewCampaignPage() {
+  const me = await requireProfile();
   const vendors = await vendorOptions();
-  const senders = (process.env.EMAIL_SENDER_ADDRESSES ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const sendingAs = senderFor(me) ?? "(no sender mailbox configured)";
   const defaultReplyTo = process.env.EMAIL_DEFAULT_REPLY_TO ?? "";
 
   return (
@@ -19,7 +19,7 @@ export default async function NewCampaignPage() {
       </div>
       <Composer
         vendors={vendors.filter((v) => !!v.email)}
-        senders={senders}
+        sendingAs={sendingAs}
         defaultReplyTo={defaultReplyTo}
       />
     </div>
