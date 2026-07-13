@@ -233,6 +233,7 @@ export function CandidatesTable({
   const router = useRouter();
   const [query, setQuery] = useState("");
 
+  // Dedup happens in listCandidates() — table only filters.
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return candidates;
