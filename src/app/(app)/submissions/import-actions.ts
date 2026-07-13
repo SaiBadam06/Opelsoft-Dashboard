@@ -14,6 +14,10 @@ import {
   type RowError,
 } from "@/lib/import-maps";
 import type { PrimeLayer, SubmissionStatus } from "@/lib/job-constants";
+import {
+  syncCandidateStage,
+  ensurePlacementFromSubmission,
+} from "@/lib/pipeline-sync.server";
 
 function normStatus(v: string | undefined): SubmissionStatus {
   const s = (v ?? "").toLowerCase();
@@ -133,6 +137,18 @@ export async function importSubmissions(rows: RawRow[]) {
 
   const { error } = await supabase.from("submissions").insert(toInsert);
   if (error) return { error: error.message };
+  // Consistency with createSubmission: imported submissions must advance the
+  // candidate's pipeline stage and create a placement for any `placed` row.
+  // Sequential on purpose (not Promise.all): ensurePlacement's "no active
+  // placement" guard would race if two `placed` rows for the same candidate ran
+  // at once. Import is an occasional admin action, so O(n) round-trips is fine.
+  const affected = new Set(toInsert.map((r) => r.candidate_id));
+  for (const cid of affected) await syncCandidateStage(supabase, cid, me.id);
+  for (const r of toInsert) await ensurePlacementFromSubmission(supabase, r, me.id);
   revalidatePath("/submissions");
+  revalidatePath("/pipeline");
+  revalidatePath("/candidates");
+  revalidatePath("/placements");
+  revalidatePath("/dashboard");
   return { ok: true as const, inserted: toInsert.length, skipped, duplicates };
 }

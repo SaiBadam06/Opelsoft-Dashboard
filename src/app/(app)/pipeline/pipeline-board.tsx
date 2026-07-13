@@ -154,6 +154,7 @@ export function PipelineBoard({ candidates }: { candidates: Candidate[] }) {
 
   return (
     <DndContext
+      id="pipeline-board"
       sensors={sensors}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}

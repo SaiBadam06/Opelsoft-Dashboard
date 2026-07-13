@@ -4,6 +4,12 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
+import {
+  writeBackStageToSubmission,
+  candidateHasActivity,
+} from "@/lib/pipeline-sync.server";
+import { stageRequiresBacking } from "@/lib/pipeline-sync";
+import { stageLabel } from "@/lib/candidate-constants";
 import type { CandidateStatus, PipelineStage } from "@/lib/candidate-constants";
 
 function str(formData: FormData, key: string): string | null {
@@ -58,6 +64,12 @@ export async function createCandidateReturningId(
 
   const payload = buildPayload(formData);
   if (!payload.full_name) return { error: "Name is required." };
+  // A brand-new candidate has no submissions/interviews yet.
+  if (stageRequiresBacking(payload.pipeline_stage)) {
+    return {
+      error: `Can't create a candidate at ${stageLabel(payload.pipeline_stage)} — add a submission or interview first.`,
+    };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -90,15 +102,36 @@ export async function updateCandidate(
   if (!payload.full_name) return { error: "Name is required." };
 
   const supabase = await createClient();
+  const { data: before } = await supabase
+    .from("candidates")
+    .select("pipeline_stage")
+    .eq("id", id)
+    .single();
+  if (
+    stageRequiresBacking(payload.pipeline_stage) &&
+    !(await candidateHasActivity(supabase, id))
+  ) {
+    return {
+      error: `Can't set stage to ${stageLabel(payload.pipeline_stage)} — this candidate has no submission or interview yet.`,
+    };
+  }
   const { error } = await supabase
     .from("candidates")
     .update({ ...payload, updated_by: me.id })
     .eq("id", id);
 
   if (error) return { error: error.message };
+  // Parity with the pipeline drag (setStage): an edit that changes the stage
+  // writes back to the candidate's latest submission (and placement if placed).
+  if (before && before.pipeline_stage !== payload.pipeline_stage) {
+    await writeBackStageToSubmission(supabase, id, payload.pipeline_stage, me.id);
+  }
   revalidatePath("/candidates");
   revalidatePath(`/candidates/${id}`);
   revalidatePath("/pipeline");
+  revalidatePath("/submissions");
+  revalidatePath("/placements");
+  revalidatePath("/dashboard");
   redirect(`/candidates/${id}`);
 }
 
@@ -132,14 +165,23 @@ export async function setStage(id: string, stage: PipelineStage) {
   const me = await getCurrentProfile();
   if (!me) return { error: "Not authorized" };
   const supabase = await createClient();
+  if (stageRequiresBacking(stage) && !(await candidateHasActivity(supabase, id))) {
+    return {
+      error: `Can't move to ${stageLabel(stage)} — this candidate has no submission or interview yet.`,
+    };
+  }
   const { error } = await supabase
     .from("candidates")
     .update({ pipeline_stage: stage, updated_by: me.id })
     .eq("id", id);
   if (error) return { error: error.message };
+  // Step 5: reverse sync — a drag also updates the candidate's latest submission.
+  await writeBackStageToSubmission(supabase, id, stage, me.id);
   revalidatePath("/pipeline");
   revalidatePath("/candidates");
   revalidatePath(`/candidates/${id}`);
+  revalidatePath("/submissions");
+  revalidatePath("/dashboard");
   return { ok: true as const };
 }
 

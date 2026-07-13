@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { CandidateStatus, PipelineStage } from "@/lib/candidate-constants";
+import { deduplicateCandidates } from "@/lib/candidate-dedup";
 
 export interface Candidate {
   id: string;
@@ -31,11 +32,17 @@ export interface Candidate {
   updated_by: string | null;
   created_at: string;
   updated_at: string;
+  submissions?: Array<{ id: string }> | null;
+  placements?: Array<{ id: string }> | null;
+  documents?: Array<{ id: string }> | null;
   coordinator?: { full_name: string | null; email: string | null } | null;
 }
 
 const COLUMNS =
   "id, full_name, email, phone, location, experience_years, current_company, rate, visa, relocation, availability, linkedin, github, portfolio, primary_skills, secondary_skills, certifications, projects, education, preferred_location, status, pipeline_stage, visa_transfer, notes, assigned_coordinator_id, created_by, updated_by, created_at, updated_at";
+
+// Nested id lists power survivor scoring in deduplicateCandidates (activity first).
+const LIST_SELECT = `${COLUMNS}, coordinator:profiles!candidates_assigned_coordinator_id_fkey(full_name, email), submissions(id), placements(id), documents(id)`;
 
 // RLS automatically scopes these to what the current user may see
 // (admins: all; coordinators: only their own).
@@ -43,9 +50,9 @@ export async function listCandidates(): Promise<Candidate[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("candidates")
-    .select(`${COLUMNS}, coordinator:profiles!candidates_assigned_coordinator_id_fkey(full_name, email)`)
+    .select(LIST_SELECT)
     .order("updated_at", { ascending: false });
-  return (data as Candidate[] | null) ?? [];
+  return deduplicateCandidates((data as Candidate[] | null) ?? []);
 }
 
 export async function getCandidate(id: string): Promise<Candidate | null> {
@@ -65,11 +72,23 @@ export async function candidateOptions(): Promise<
   const supabase = await createClient();
   const { data } = await supabase
     .from("candidates")
-    .select("id, full_name")
+    .select("id, full_name, email, updated_at, pipeline_stage, submissions(id), placements(id), documents(id)")
     .order("full_name", { ascending: true });
-  return (data ?? []).map((c) => ({
+
+  const candidates = (data ?? []).map((c) => ({
     id: c.id as string,
     full_name: c.full_name as string,
+    email: (c.email as string | null) ?? null,
+    pipeline_stage: (c.pipeline_stage as PipelineStage) ?? "new",
+    updated_at: (c.updated_at as string) ?? "",
+    submissions: (c.submissions as Array<{ id: string }> | null) ?? [],
+    placements: (c.placements as Array<{ id: string }> | null) ?? [],
+    documents: (c.documents as Array<{ id: string }> | null) ?? [],
+  }));
+
+  return deduplicateCandidates(candidates).map(({ id, full_name }) => ({
+    id,
+    full_name,
   }));
 }
 

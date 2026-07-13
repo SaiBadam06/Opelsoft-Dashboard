@@ -64,10 +64,12 @@ export function AppSidebar({ role }: { role: Role }) {
           href="/dashboard"
           className="flex h-9 items-center px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
         >
+          {/* 133×36 matches logo.svg's true 800:216 viewBox so next/image
+              doesn't warn about a modified dimension; h-9 w-auto drives size. */}
           <Image
             src="/logo.svg"
             alt="OpelSoft"
-            width={150}
+            width={133}
             height={36}
             priority
             className="h-9 w-auto group-data-[collapsible=icon]:hidden"
