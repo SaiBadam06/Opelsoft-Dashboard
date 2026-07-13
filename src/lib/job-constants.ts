@@ -1,3 +1,6 @@
+import type { CampaignStatus } from "@/lib/campaigns";
+
+export type { CampaignStatus };
 export type RequirementPriority = "low" | "medium" | "high" | "urgent";
 export type RequirementStatus = "open" | "on_hold" | "filled" | "closed";
 export type SubmissionStatus =
@@ -106,6 +109,40 @@ export function priorityBadgeClass(p: RequirementPriority): string {
       return "bg-info text-info-foreground";
     case "low":
       return "bg-muted text-muted-foreground";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
+}
+
+export function campaignStatusLabel(s: CampaignStatus): string {
+  switch (s) {
+    case "draft":
+      return "Draft";
+    case "sending":
+      return "Sending";
+    case "paused":
+      return "Paused";
+    case "done":
+      return "Done";
+    case "failed":
+      return "Failed";
+    default:
+      return s;
+  }
+}
+
+export function campaignStatusBadgeClass(s: CampaignStatus): string {
+  switch (s) {
+    case "draft":
+      return "bg-muted text-muted-foreground";
+    case "sending":
+      return "bg-info text-info-foreground";
+    case "paused":
+      return "bg-warning text-warning-foreground";
+    case "done":
+      return "bg-success text-success-foreground";
+    case "failed":
+      return "bg-destructive text-white";
     default:
       return "bg-muted text-muted-foreground";
   }
