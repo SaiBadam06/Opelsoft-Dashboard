@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_SPREADSHEET_ROWS = 20_000;
 
 export type ParsedRecipient = { email: string; mergeData: Record<string, string> };
 
@@ -40,7 +41,8 @@ export function validate(list: ParsedRecipient[]): { valid: ParsedRecipient[]; i
 export function parseSpreadsheet(buf: ArrayBuffer): ParsedRecipient[] {
   const wb = XLSX.read(buf, { type: "array" });
   const sheet = wb.Sheets[wb.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+  // ponytail: hard row cap, not a streaming parser — fine at this campaign scale, revisit if a legit list exceeds it.
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" }).slice(0, MAX_SPREADSHEET_ROWS);
   const out: ParsedRecipient[] = [];
   for (const row of rows) {
     const entries = Object.entries(row).map(

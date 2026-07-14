@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/admin";
+import { normalizeEmail } from "@/lib/email/recipients";
 
 async function lookupRecipient(token: string): Promise<{ email: string; campaign_id: string } | null> {
   if (!token) return null;
@@ -16,8 +17,9 @@ async function suppress(token: string): Promise<boolean> {
   const r = await lookupRecipient(token);
   if (!r) return false;
   const db = createServiceClient();
+  // eq, not ilike: '_'/'%' in an address are LIKE wildcards, not literal characters.
   const { data: existing } = await db
-    .from("email_suppressions").select("id").ilike("email", r.email).limit(1).maybeSingle();
+    .from("email_suppressions").select("id").eq("email", normalizeEmail(r.email)).limit(1).maybeSingle();
   if (!existing) {
     const { error } = await db.from("email_suppressions").insert(
       { email: r.email, reason: "unsubscribe", source_campaign_id: r.campaign_id },

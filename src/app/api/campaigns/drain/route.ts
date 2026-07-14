@@ -1,17 +1,28 @@
+import { timingSafeEqual } from "crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { getSender } from "@/lib/email";
 import { buildOutbound, unsubscribeUrl } from "@/lib/email/render";
+import { normalizeEmail } from "@/lib/email/recipients";
 
 export const dynamic = "force-dynamic";
 const BATCH = 28;
 const STALE_MIN = 5;
+const MAX_ATTEMPTS = 5;
+
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+}
 
 export async function POST(request: NextRequest) {
   // Fail closed: unset OR empty secret means the route is disabled (an empty
-  // header must never match an empty env value).
+  // header must never match an empty env value). Constant-time compare so the
+  // secret can't be brute-forced via response-time timing.
   const secret = process.env.EMAIL_DRAIN_SECRET;
-  if (!secret || request.headers.get("x-drain-secret") !== secret) {
+  const header = request.headers.get("x-drain-secret") ?? "";
+  if (!secret || !safeEqual(header, secret)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const db = createServiceClient();
@@ -44,7 +55,7 @@ export async function POST(request: NextRequest) {
     p_campaign: campaign.id,
     p_limit: Math.min(BATCH, remaining),
   });
-  const batch = (claimed as Array<{ id: string; email: string; merge_data: Record<string, string>; unsubscribe_token: string }> | null) ?? [];
+  const batch = (claimed as Array<{ id: string; email: string; merge_data: Record<string, string>; unsubscribe_token: string; attempts: number }> | null) ?? [];
 
   if (batch.length === 0) {
     // Done only when nothing is queued AND nothing is in-flight. Rows stuck in
@@ -64,8 +75,9 @@ export async function POST(request: NextRequest) {
 
   for (const r of batch) {
     // Last-mile suppression check (someone may have unsubscribed after enqueue).
+    // eq, not ilike: '_'/'%' in an address are LIKE wildcards, not literal characters.
     const { data: sup } = await db
-      .from("email_suppressions").select("id").ilike("email", r.email).limit(1).maybeSingle();
+      .from("email_suppressions").select("id").eq("email", normalizeEmail(r.email)).limit(1).maybeSingle();
     if (sup) {
       await db.from("email_campaign_recipients").update({ status: "suppressed" }).eq("id", r.id);
       continue;
@@ -91,7 +103,7 @@ export async function POST(request: NextRequest) {
     } catch (e) {
       const status = (e as { status?: number }).status ?? 0;
       // TimeoutError = our 15s AbortSignal fired; transient, retry next tick.
-      const retryable = status === 429 || status >= 500 || (e as Error).name === "TimeoutError";
+      const retryable = (status === 429 || status >= 500 || (e as Error).name === "TimeoutError") && r.attempts < MAX_ATTEMPTS;
       await db.from("email_campaign_recipients")
         .update({ status: retryable ? "queued" : "failed", last_error: String((e as Error).message).slice(0, 500) })
         .eq("id", r.id);

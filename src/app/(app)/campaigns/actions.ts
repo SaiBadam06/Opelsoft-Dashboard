@@ -7,6 +7,8 @@ import { getCurrentProfile } from "@/lib/auth";
 import { dedupe, validate, parseManualList, parseSpreadsheet, type ParsedRecipient } from "@/lib/email/recipients";
 import { senderFor } from "@/lib/email/sender-address";
 
+const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5MB
+
 export async function createAndStartCampaign(_prev: unknown, fd: FormData) {
   const me = await getCurrentProfile();
   if (!me) return { error: "Not authorized" };
@@ -44,6 +46,7 @@ export async function createAndStartCampaign(_prev: unknown, fd: FormData) {
 
   const file = fd.get("file");
   if (file && file instanceof File && file.size > 0) {
+    if (file.size > MAX_FILE_BYTES) return { error: "Spreadsheet is too large (max 5MB)." };
     recipients.push(...parseSpreadsheet(await file.arrayBuffer()));
   }
 
@@ -56,31 +59,36 @@ export async function createAndStartCampaign(_prev: unknown, fd: FormData) {
   const finalRecipients = valid.filter((r) => !suppressed.has(r.email));
   if (finalRecipients.length === 0) return { error: "All recipients are on the suppression list." };
 
-  // Create campaign (status sending) then insert recipient rows.
-  const { data: campaign, error: cErr } = await supabase
-    .from("email_campaigns")
-    .insert({ name, subject, body_html, from_address, reply_to, status: "sending", total: finalRecipients.length, created_by: me.id })
-    .select("id")
-    .single();
-  if (cErr || !campaign) return { error: cErr?.message ?? "Failed to create campaign." };
-
-  const rows = finalRecipients.map((r) => ({
-    campaign_id: campaign.id,
-    vendor_id: vendorMap.get(r.email) ?? null,
-    email: r.email,
-    merge_data: r.mergeData,
-  }));
-  const { error: rErr } = await supabase.from("email_campaign_recipients").insert(rows);
-  if (rErr) return { error: rErr.message };
+  // Campaign + recipients insert atomically in one RPC — a mid-way failure must
+  // never leave a 'sending' campaign with total > 0 and zero recipient rows.
+  const { data: campaignId, error: cErr } = await supabase.rpc("create_email_campaign", {
+    p_name: name,
+    p_subject: subject,
+    p_body_html: body_html,
+    p_from_address: from_address,
+    p_reply_to: reply_to,
+    p_created_by: me.id,
+    p_recipients: finalRecipients.map((r) => ({
+      email: r.email,
+      vendor_id: vendorMap.get(r.email) ?? null,
+      merge_data: r.mergeData,
+    })),
+  });
+  if (cErr || !campaignId) return { error: cErr?.message ?? "Failed to create campaign." };
 
   revalidatePath("/campaigns");
-  redirect(`/campaigns/${campaign.id}`);
+  redirect(`/campaigns/${campaignId}`);
 }
 
 export async function setCampaignStatus(id: string, status: "sending" | "paused") {
   const me = await getCurrentProfile();
   if (!me) return { error: "Not authorized" };
   const supabase = await createClient();
+  // Only sending<->paused is a valid manual transition; never reopen a done/failed campaign.
+  const { data: campaign } = await supabase.from("email_campaigns").select("status").eq("id", id).single();
+  if (!campaign || (campaign.status !== "sending" && campaign.status !== "paused")) {
+    return { error: "Campaign can't be paused or resumed from its current status." };
+  }
   const { error } = await supabase.from("email_campaigns").update({ status }).eq("id", id);
   if (error) return { error: error.message };
   revalidatePath(`/campaigns/${id}`);
