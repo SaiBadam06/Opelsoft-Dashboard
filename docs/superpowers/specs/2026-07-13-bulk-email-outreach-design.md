@@ -38,7 +38,9 @@ mailboxes that show cold-bulk patterns. Microsoft explicitly recommends ACS for 
 6. **Compliance** — one-click unsubscribe (`List-Unsubscribe` + `List-Unsubscribe-Post` headers +
    visible link), CAN-SPAM footer with physical address, suppression list enforced before every send.
 7. **Send log + status UI** — per-recipient sent/queued/failed/suppressed with error detail.
-8. **From/Reply-To control** — From is a dropdown of allow-listed mailboxes; Reply-To defaults to the signatory.
+8. **From/Reply-To control** — From is derived server-side from the logged-in user (`senderFor`:
+   admins send as the shared outreach mailbox, others as their own `@opelsoft.com` mailbox), never
+   trusted from the form; Reply-To defaults to the signatory.
 
 ### Out of scope (Phase 2 — seams left, not built)
 - ACS/SES sender implementation (interface exists; impl deferred).
@@ -133,8 +135,9 @@ Shown in the composer before Send; user can fix or send anyway.
   if a tenant blocks it. (ACS sets them natively in Phase 2.)
 - **CAN-SPAM footer** (auto-appended): physical address + unsubscribe.
   Address: `OpelSoft LLC, 255 Old New Brunswick Road, Suite N210, Piscataway, NJ 08854`.
-- **From/Reply-To:** From = allow-listed mailbox (default `alex.smith@opelsoft.com`); Reply-To =
-  signatory (e.g. `harsh@opelsoft.com`) so replies reach the real person and From matches intent.
+- **From/Reply-To:** From = derived from the logged-in user via `senderFor` (admins → shared
+  outreach mailbox `EMAIL_SENDER_ADDRESSES[0]`, others → their own `@opelsoft.com` mailbox);
+  Reply-To = signatory (e.g. `harsh@opelsoft.com`) so replies reach the real person.
 - **Personalization:** merge `{{vendor_name}}`/`{{contact_name}}` so no two bodies are byte-identical
   and "Dear Vendors" becomes "Dear {{contact_name}}".
 - **Throttle + daily cap + suppression** as in 4.3.
@@ -151,7 +154,7 @@ The provided outreach HTML is the working template. Linter/deliverability notes 
 5. **Logo hosted on `opelsoft.vercel.app`** (≠ sending domain) and **no `alt`** → host on
    `opelsoft.com`, add `alt="OpelSoft"`.
 6. **From/signature mismatch** (send-from alex.smith vs signed Harsh) → set Reply-To to Harsh, or
-   send from harsh@opelsoft.com (dropdown).
+   have Harsh create the campaign (non-admins send as their own mailbox automatically).
 Subject from the old flow ("Looks Like You're Sharing a Requirement") is acceptable — not spammy.
 
 ## 6. UI
@@ -159,7 +162,8 @@ Subject from the old flow ("Looks Like You're Sharing a Requirement") is accepta
 New route group `src/app/(app)/campaigns/`:
 - **`/campaigns`** — list campaigns with status + counts.
 - **`/campaigns/new`** — wizard: (1) recipients (vendors filter / upload / manual), (2) compose
-  (From dropdown, Reply-To, subject, HTML body, live preview + recipient count), (3) spam-check
+  (From shown read-only — derived from the logged-in user, Reply-To, subject, HTML body, live
+  preview + recipient count), (3) spam-check
   panel + Send.
 - **`/campaigns/[id]`** — live progress bar (polls read-only) + per-recipient status table
   (sent/queued/failed/suppressed + error), **Pause/Resume**. Sending runs **unattended via pg_cron**
@@ -172,7 +176,7 @@ Mutations via `actions.ts` Server Actions (matches every other feature dir). sha
 MS_TENANT_ID=            # Azure AD tenant
 MS_CLIENT_ID=            # registered app (done)
 MS_CLIENT_SECRET=        # app secret  (SECURITY: see §9)
-EMAIL_SENDER_ADDRESSES=alex.smith@opelsoft.com   # allow-list, comma-separated (From dropdown)
+EMAIL_SENDER_ADDRESSES=alex.smith@opelsoft.com   # comma-separated; [0] = shared outreach mailbox (admin From + fallback)
 EMAIL_DEFAULT_REPLY_TO=harsh@opelsoft.com
 EMAIL_DAILY_CAP=800
 EMAIL_SENDER_BACKEND=graph                        # graph | acs (Phase 2 swap)

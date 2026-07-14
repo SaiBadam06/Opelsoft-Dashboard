@@ -73,8 +73,25 @@ export function Composer({
     });
   }
 
+  // Guard against blasting a large list by mistake: show the recipient count
+  // and require an explicit confirm before the campaign starts sending.
+  function confirmSend(e: React.FormEvent<HTMLFormElement>) {
+    const fd = new FormData(e.currentTarget);
+    const manual = String(fd.get("manual") ?? "").trim();
+    const manualCount = manual ? manual.split(/[\s,;]+/).filter(Boolean).length : 0;
+    const file = fd.get("file");
+    const hasFile = file instanceof File && file.size > 0;
+    const n = selectedVendors.size + manualCount;
+    const target =
+      `${n} recipient${n === 1 ? "" : "s"}` +
+      (hasFile ? " plus everyone in the uploaded spreadsheet" : "");
+    if (!window.confirm(`Start sending to ${target}? Sending begins immediately.`)) {
+      e.preventDefault();
+    }
+  }
+
   return (
-    <form action={formAction} className="flex flex-col gap-6">
+    <form action={formAction} onSubmit={confirmSend} className="flex flex-col gap-6">
       <input type="hidden" name="vendor_ids" value={[...selectedVendors].join(",")} />
 
       <Card>
@@ -164,9 +181,14 @@ export function Composer({
 
           <div className="flex flex-col gap-1.5">
             <Label>Preview</Label>
-            <div
-              className="min-h-24 rounded-md border bg-background p-3 text-sm"
-              dangerouslySetInnerHTML={{ __html: bodyHtml }}
+            {/* Fully sandboxed iframe (no scripts, no same-origin): pasted or stored
+                HTML can never run in the dashboard's origin. Also closer to how mail
+                clients render the body — standalone, without the app's CSS. */}
+            <iframe
+              sandbox=""
+              srcDoc={bodyHtml}
+              title="Email preview"
+              className="h-48 w-full rounded-md border bg-white"
             />
           </div>
 
